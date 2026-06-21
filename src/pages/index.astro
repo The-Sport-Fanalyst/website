@@ -3,6 +3,7 @@ export const prerender = true;
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import ProjectCard from '../components/ProjectCard.astro';
+import AnnouncementStrip from '../components/AnnouncementStrip.astro';
 
 const sports = (await getCollection('sports')).sort((a, b) => a.data.order - b.data.order);
 const allProjects = await getCollection('projects');
@@ -27,6 +28,7 @@ const catBlurb: Record<string, string> = {
 };
 ---
 <Base>
+  <AnnouncementStrip />
   <section class="hero">
     <div class="wrap hero__inner">
       <p class="eyebrow">Open analytics community · Flagship: LA28</p>

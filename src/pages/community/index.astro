@@ -1,235 +1,158 @@
 ---
 export const prerender = true;
-import { getCollection } from 'astro:content';
-import Base from '../layouts/Base.astro';
-import ProjectCard from '../components/ProjectCard.astro';
-import AnnouncementStrip from '../components/AnnouncementStrip.astro';
+import Base from '../../layouts/Base.astro';
+import {
+  categoryUrl,
+  newDiscussionUrl,
+  allDiscussionsUrl,
+  DISCUSSIONS_REPO,
+  DISCUSSION_CATEGORY,
+  fetchDiscussions,
+  discussionsConfigured,
+  boardTypeForCategory,
+  type BoardType,
+  type DiscussionItem,
+} from '../../lib/discussions';
 
-const sports = (await getCollection('sports')).sort((a, b) => a.data.order - b.data.order);
-const allProjects = await getCollection('projects');
-const featured = allProjects.filter((p) => p.data.featured);
-const latest = [...allProjects].sort(
-  (a, b) => b.data.created_date.valueOf() - a.data.created_date.valueOf()
-).slice(0, 4);
+const types = ['Open Project', 'Research Question', 'Data Request', 'Discussion'] as const;
 
-const stats = {
-  sports: sports.length,
-  projects: allProjects.length,
-  contributors: (await getCollection('contributors')).length,
-  open: (await getCollection('community')).filter((c) => c.data.status === 'Open').length,
+const typeMeta: Record<BoardType, { blurb: string; accent: string; cta: string }> = {
+  'Open Project': { blurb: 'Projects looking for collaborators.', accent: 'lane', cta: 'Post an open project' },
+  'Research Question': { blurb: 'Open questions worth investigating.', accent: 'brick', cta: 'Ask a research question' },
+  'Data Request': { blurb: 'Datasets the community is hunting for.', accent: 'slate', cta: 'Request data' },
+  'Discussion': { blurb: 'General sports-analytics conversation.', accent: 'ink', cta: 'Start a discussion' },
 };
 
-const catList = ['Data', 'Research', 'Models', 'Apps'] as const;
-const catBlurb: Record<string, string> = {
-  Data: 'Datasets, APIs, historical results, athlete databases.',
-  Research: 'Articles, statistical studies, visual storytelling.',
-  Models: 'Predictions, machine learning, notebooks.',
-  Apps: 'Dashboards, calculators, interactive tools.',
-};
+// Pull real discussions at build time. Grouped by our board type via category.
+const configured = discussionsConfigured();
+const all = await fetchDiscussions(50);
+const byType = (t: BoardType): DiscussionItem[] =>
+  all.filter((d) => boardTypeForCategory(d.category) === t);
+
+const fmt = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 ---
-<Base>
-  <AnnouncementStrip />
-  <section class="hero">
-    <div class="wrap hero__inner">
-      <p class="eyebrow">Open analytics community · Flagship: LA28</p>
-      <h1 class="hero__h">
-        The Olympics, <span class="u-brick">measured</span> in the open.
-      </h1>
-      <p class="hero__sub">
-        A community-built home for Olympic and Paralympic <b>data</b>, <b>research</b>,
-        <b>models</b>, and <b>apps</b>. Like GitHub for collaboration, Wikipedia for
-        knowledge, and Kaggle for projects — pointed at the Games.
-      </p>
-      <div class="hero__cta">
-        <a href="/sports" class="btn">Explore the sports →</a>
-        <a href="/contribute" class="btn btn--ghost">Start contributing</a>
-      </div>
-
-      <dl class="hero__stats">
-        <div><dt>{stats.sports}</dt><dd>Sports hubs</dd></div>
-        <div><dt>{stats.projects}</dt><dd>Projects</dd></div>
-        <div><dt>{stats.contributors}</dt><dd>Contributors</dd></div>
-        <div><dt>{stats.open}</dt><dd>Open calls</dd></div>
-      </dl>
-    </div>
-    <div class="hero__lanes" aria-hidden="true">
-      <span></span><span></span><span></span><span></span><span></span>
-    </div>
-  </section>
-
-  <section class="section--tight wrap">
-    <div class="cats">
-      {catList.map((c) => (
-        <div class={`cat cat--${c.toLowerCase()}`}>
-          <span class="cat__name">{c}</span>
-          <span class="cat__blurb">{catBlurb[c]}</span>
-        </div>
-      ))}
-    </div>
-  </section>
-
-  <section class="section wrap">
-    <header class="band">
-      <h2>Featured projects</h2>
-      <a href="/projects" class="band__link">All projects →</a>
-    </header>
-    <p class="band__lead">The community's strongest work — open code, cited data, named authors.</p>
-    <div class="grid">
-      {featured.map((p) => (
-        <ProjectCard
-          title={p.data.title}
-          creator={p.data.creator}
-          sport={p.data.sport}
-          category={p.data.category}
-          description={p.data.description}
-          status={p.data.status}
-          github_url={p.data.github_url}
-          demo_url={p.data.demo_url}
-          contributors={p.data.contributors}
-          games={p.data.games}
-          href={`/projects/${p.id}`}
-        />
-      ))}
-    </div>
-  </section>
-
-  <section class="sports-strip">
+<Base title="Community board — The Sport Fanalyst">
+  <section class="head">
     <div class="wrap">
-      <header class="band band--invert">
-        <h2>Sports hubs</h2>
-        <a href="/sports" class="band__link">Directory →</a>
-      </header>
-      <div class="strip">
-        {sports.map((s) => (
-          <a href={`/sports/${s.data.slug}`} class="strip__card">
-            <span class="strip__icon">{s.data.icon}</span>
-            <span class="strip__name">{s.data.name}</span>
-            <span class="strip__games">
-              {s.data.olympic && <i class="chip chip--olympic">Olympic</i>}
-              {s.data.paralympic && <i class="chip chip--paralympic">Para</i>}
-            </span>
-          </a>
-        ))}
+      <p class="eyebrow">Collaboration · Powered by GitHub Discussions</p>
+      <h1>Community board</h1>
+      <p class="lead">
+        Propose a project, ask a research question, request data, or just talk shop.
+        Conversations live in <b>GitHub Discussions</b> — threaded replies, notifications,
+        and your GitHub identity, with no extra account.
+      </p>
+      <div class="head__cta">
+        <a href={allDiscussionsUrl} class="btn">Open Discussions ↗</a>
+        <a href="/contributors" class="btn btn--ghost">Find collaborators</a>
       </div>
+      <p class="refresh">This board lists live discussions and refreshes once daily. New posts appear on GitHub immediately.</p>
     </div>
   </section>
 
-  <section class="section wrap">
-    <header class="band">
-      <h2>Latest contributions</h2>
-      <a href="/community" class="band__link">Community board →</a>
-    </header>
-    <ol class="feed">
-      {latest.map((p) => (
-        <li class="feed__row">
-          <a href={`/projects/${p.id}`} class="feed__main">
-            <span class={`chip chip--${p.data.category.toLowerCase()}`}>{p.data.category}</span>
-            <span class="feed__title">{p.data.title}</span>
-          </a>
-          <span class="feed__meta">
-            {p.data.sport} · {p.data.creator} ·
-            <time datetime={p.data.created_date.toISOString()}>
-              {p.data.created_date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </time>
-          </span>
-        </li>
-      ))}
-    </ol>
-  </section>
-
-  <section class="join">
-    <div class="wrap join__inner">
-      <div>
-        <p class="eyebrow">Everyone is welcome</p>
-        <h2 class="join__h">You don't have to write code to belong here.</h2>
-        <p class="join__sub">
-          Transcribe a results book. Fact-check a study. Write an explainer. Propose a question.
-          Trust is built in the open — every analysis shows its sources, methods, and author.
-        </p>
+  <section class="wrap section">
+    {!configured && (
+      <div class="notice">
+        <b>Discussions aren't connected yet.</b>
+        <span>Add a <code>GITHUB_DISCUSSIONS_TOKEN</code> in Netlify and enable Discussions on <a href={allDiscussionsUrl}>{DISCUSSIONS_REPO}</a>. Until then, you can still start threads with the links below.</span>
       </div>
-      <a href="/contribute" class="btn">Read the contributor guide →</a>
-    </div>
+    )}
+
+    {types.map((t) => {
+      const items = byType(t);
+      return (
+        <section class="tsec">
+          <header class={`thead thead--${typeMeta[t].accent}`}>
+            <div class="thead__main">
+              <h2><a href={categoryUrl(t)}>{t}<span class="thead__arrow">↗</span></a></h2>
+              <p>{typeMeta[t].blurb}</p>
+            </div>
+            <a href={newDiscussionUrl({ type: t })} class="thead__new">{typeMeta[t].cta} →</a>
+          </header>
+
+          {items.length > 0 ? (
+            <div class="posts">
+              {items.map((d) => (
+                <a class="post" href={d.url} target="_blank" rel="noopener">
+                  <div class="post__head">
+                    <h3>{d.title}</h3>
+                    <span class="post__count">{d.comments} {d.comments === 1 ? 'reply' : 'replies'}</span>
+                  </div>
+                  {d.excerpt && <p class="post__desc">{d.excerpt}{d.excerpt.length >= 160 ? '…' : ''}</p>}
+                  <div class="post__foot">
+                    <span class="post__meta">
+                      {d.avatar && <img class="post__av" src={d.avatar} alt="" width="18" height="18" />}
+                      {d.author ?? 'someone'} · {fmt(d.createdAt)}
+                    </span>
+                    <span class="post__open">Open in Discussions ↗</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div class="empty">
+              <p>{configured ? `No ${t.toLowerCase()}s yet — be the first.` : 'Connect Discussions to list threads here.'}</p>
+              <a href={newDiscussionUrl({ type: t })} class="btn btn--ghost">{typeMeta[t].cta} →</a>
+            </div>
+          )}
+        </section>
+      );
+    })}
+
+    <p class="repo-note">
+      Discussions are hosted on <a href={allDiscussionsUrl}>{DISCUSSIONS_REPO}</a>. Board listings refresh daily.
+    </p>
   </section>
 </Base>
 
 <style>
-  .u-brick { color: var(--brick); }
+  .head { border-bottom: 1px solid var(--line); padding-block: clamp(2.4rem, 5vw, 4rem) 2.4rem; }
+  .head h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); letter-spacing: -.03em; margin: 1rem 0 .8rem; }
+  .lead { max-width: 62ch; color: var(--ink-soft); margin: 0 0 1.4rem; }
+  .lead b { font-weight: 600; }
+  .head__cta { display: flex; gap: .7rem; flex-wrap: wrap; }
+  .refresh { margin: 1.2rem 0 0; font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--gray-soft); }
 
-  .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
-  .hero__inner { padding-block: clamp(3rem, 8vw, 6rem); position: relative; z-index: 2; max-width: 940px; }
-  .hero__h {
-    font-size: clamp(2.6rem, 7vw, 5rem); line-height: 0.98; letter-spacing: -0.03em;
-    font-weight: 700; margin: 1.2rem 0 0;
-  }
-  .hero__sub { font-size: clamp(1.05rem, 2.2vw, 1.3rem); max-width: 52ch; margin: 1.4rem 0 2rem; color: var(--ink-soft); }
-  .hero__sub b { font-weight: 600; }
-  .hero__cta { display: flex; gap: .8rem; flex-wrap: wrap; }
-  .hero__stats {
-    display: flex; gap: clamp(1.5rem, 5vw, 3.5rem); margin: 2.8rem 0 0; padding: 0;
-    border-top: 1px solid var(--line); padding-top: 1.6rem;
-  }
-  .hero__stats div { margin: 0; }
-  .hero__stats dt { font-family: var(--display); font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; }
-  .hero__stats dd { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--gray); margin: .2rem 0 0; }
+  .notice { border: 1px solid var(--line); border-left: var(--rail) solid var(--brick); padding: 1rem 1.2rem; margin-bottom: 2rem; display: flex; flex-direction: column; gap: .3rem; }
+  .notice b { font-family: var(--display); }
+  .notice span { color: var(--ink-soft); font-size: .92rem; }
+  .notice code { font-family: var(--mono); font-size: .85em; background: var(--paper-dim); padding: .05rem .3rem; }
+  .notice a { color: var(--brick); }
 
-  .hero__lanes {
-    position: absolute; inset: 0 0 0 auto; width: 42%;
-    display: flex; gap: 0; opacity: .5; z-index: 1; pointer-events: none;
-  }
-  .hero__lanes span { flex: 1; height: 100%; transform: skewX(-12deg) translateX(20%); }
-  .hero__lanes span:nth-child(1){ background: var(--paper-dim); }
-  .hero__lanes span:nth-child(2){ background: var(--lane); opacity: .25; }
-  .hero__lanes span:nth-child(3){ background: var(--paper-dim); }
-  .hero__lanes span:nth-child(4){ background: var(--brick); opacity: .14; }
-  .hero__lanes span:nth-child(5){ background: var(--paper-dim); }
-  @media (max-width: 760px) { .hero__lanes { display: none; } }
+  .tsec { margin-bottom: 3.4rem; }
+  .thead { border-left: var(--rail) solid var(--ink); padding-left: 1rem; margin-bottom: 1.4rem;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .thead--lane { border-color: var(--lane); }
+  .thead--brick { border-color: var(--brick); }
+  .thead--slate { border-color: var(--slate); }
+  .thead h2 { font-size: 1.5rem; margin: 0; letter-spacing: -.02em; }
+  .thead h2 a { text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; gap: .4rem; }
+  .thead h2 a:hover { color: var(--brick); }
+  .thead__arrow { font-size: .8em; color: var(--gray-soft); }
+  .thead p { margin: .3rem 0 0; color: var(--gray); font-size: .92rem; }
+  .thead__new { font-family: var(--mono); font-size: .76rem; text-transform: uppercase; letter-spacing: .04em;
+    text-decoration: none; color: var(--brick); white-space: nowrap; padding-bottom: .2rem; }
+  .thead__new:hover { border-bottom: 1px solid var(--brick); }
 
-  .cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
-  .cat { background: var(--paper); padding: 1.2rem 1.3rem; display: flex; flex-direction: column; gap: .35rem; border-top: var(--rail) solid var(--ink); }
-  .cat--data { border-top-color: var(--slate); }
-  .cat--research { border-top-color: var(--brick); }
-  .cat--models { border-top-color: var(--lane); }
-  .cat--apps { border-top-color: var(--gray); }
-  .cat__name { font-family: var(--display); font-weight: 600; font-size: 1.15rem; }
-  .cat__blurb { font-size: .85rem; color: var(--gray); }
-  @media (max-width: 720px) { .cats { grid-template-columns: repeat(2, 1fr); } }
+  .posts { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .post { background: var(--paper); padding: 1.3rem 1.4rem; transition: background .15s; text-decoration: none; color: var(--ink); display: block; }
+  .post:hover { background: var(--paper-dim); }
+  .post__head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+  .post__head h3 { font-size: 1.18rem; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+  .post:hover .post__head h3 { color: var(--brick); }
+  .post__count { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; color: var(--gray); white-space: nowrap; }
+  .post__desc { color: var(--ink-soft); font-size: .96rem; margin: .6rem 0 1rem; max-width: 75ch; }
+  .post__foot { display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .post__meta { font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--gray); display: inline-flex; align-items: center; gap: .45rem; }
+  .post__av { border-radius: 50%; }
+  .post__open { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; color: var(--slate); opacity: 0; transition: opacity .15s; }
+  .post:hover .post__open { opacity: 1; }
+  @media (max-width: 560px) { .post__open { display: none; } }
 
-  .band { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; border-bottom: 2px solid var(--ink); padding-bottom: .7rem; }
-  .band h2 { font-size: clamp(1.5rem, 3vw, 2.1rem); margin: 0; letter-spacing: -.02em; }
-  .band__link { font-family: var(--mono); font-size: .78rem; text-transform: uppercase; text-decoration: none; color: var(--brick); white-space: nowrap; }
-  .band__link:hover { text-decoration: underline; }
-  .band__lead { color: var(--gray); margin: .8rem 0 1.6rem; }
+  .empty { border: 1px dashed var(--line); padding: 1.6rem; display: flex; align-items: center;
+    justify-content: space-between; gap: 1rem; flex-wrap: wrap; color: var(--gray); }
+  .empty p { margin: 0; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.1rem; }
-
-  .sports-strip { background: var(--ink); color: var(--paper); padding-block: clamp(3rem, 6vw, 5rem); }
-  .band--invert { border-color: var(--lane); }
-  .band--invert h2 { color: var(--paper); }
-  .band--invert .band__link { color: var(--lane); }
-  .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #2A2A26; border: 1px solid #2A2A26; margin-top: 1.6rem; }
-  @media (max-width: 880px) { .strip { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 480px) { .strip { grid-template-columns: 1fr; } }
-  .strip__card { background: var(--ink); padding: 1.4rem; text-decoration: none; color: var(--paper); display: flex; flex-direction: column; gap: .6rem; transition: background .15s; }
-  .strip__card:hover { background: #1A1A16; }
-  .strip__icon { font-size: 1.8rem; color: var(--lane); }
-  .strip__name { font-family: var(--display); font-weight: 600; font-size: 1.25rem; }
-  .strip__games { display: flex; gap: .4rem; }
-  .strip__games .chip { background: transparent; }
-  .strip__games .chip--olympic { color: var(--paper); border-color: #3A3A34; }
-  .strip__games .chip--paralympic { color: var(--lane); border-color: var(--slate); }
-
-  .feed { list-style: none; margin: 1.6rem 0 0; padding: 0; }
-  .feed__row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-  .feed__main { display: flex; align-items: center; gap: .8rem; text-decoration: none; }
-  .feed__title { font-family: var(--display); font-weight: 500; font-size: 1.05rem; }
-  .feed__main:hover .feed__title { color: var(--brick); }
-  .feed__meta { font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--gray); }
-
-  .join { background: var(--lane); margin-top: 4rem; }
-  .join__inner { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding-block: clamp(2.5rem, 5vw, 4rem); flex-wrap: wrap; }
-  .join__inner .eyebrow { color: var(--ink-soft); }
-  .join__inner .eyebrow::before { background: var(--ink); }
-  .join__h { font-size: clamp(1.6rem, 3.5vw, 2.4rem); margin: .8rem 0 .6rem; letter-spacing: -.02em; max-width: 18ch; }
-  .join__sub { max-width: 50ch; color: var(--ink-soft); margin: 0; }
-  .join .btn:hover { box-shadow: 4px 4px 0 var(--paper); }
+  .repo-note { margin-top: 1rem; color: var(--gray); font-size: .88rem; }
+  .repo-note a { color: var(--brick); }
 </style>
