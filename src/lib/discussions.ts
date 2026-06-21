@@ -152,3 +152,99 @@ export function boardTypeForCategory(categoryName: string): BoardType | null {
     .find(([, s]) => s === slug);
   return entry ? entry[0] : null;
 }
+
+// ── Announcements ─────────────────────────────────────────────────────────
+//
+// Reads the repo's built-in "Announcements" category and shows only items
+// written by approved authors. The allowlist is a comma-separated list of
+// GitHub usernames in the ANNOUNCERS env var, e.g.:
+//   ANNOUNCERS=Selinalytics,another-maintainer
+// Matching is by GitHub login (case-insensitive). If ANNOUNCERS is empty, no
+// announcements are shown (fail closed). The category name defaults to
+// "Announcements" and can be overridden with DISC_CAT_ANNOUNCEMENTS.
+
+export interface AnnouncementItem {
+  title: string;
+  url: string;
+  author: string | null;
+  avatar: string | null;
+  createdAt: string;
+  excerpt: string;
+}
+
+const ANNOUNCEMENTS_CATEGORY = env('DISC_CAT_ANNOUNCEMENTS') || 'Announcements';
+
+/** Lowercased set of approved announcer logins. Empty = none allowed. */
+function approvedAnnouncers(): Set<string> {
+  const raw = env('ANNOUNCERS') || '';
+  return new Set(
+    raw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+  );
+}
+
+export function announcersConfigured(): boolean {
+  return discussionsConfigured() && approvedAnnouncers().size > 0;
+}
+
+export async function fetchAnnouncements(limit = 5): Promise<AnnouncementItem[]> {
+  const t = token();
+  if (!t) return [];
+  const approved = approvedAnnouncers();
+  if (approved.size === 0) return []; // fail closed: no allowlist, no announcements
+
+  const [owner, repo] = DISCUSSIONS_REPO.split('/');
+  if (!owner || !repo) return [];
+
+  // Fetch recent discussions and filter to the Announcements category + approved
+  // authors. (Fetching a few extra covers the case where recent items are mixed
+  // across categories.)
+  const query = `
+    query($owner:String!, $repo:String!, $n:Int!) {
+      repository(owner:$owner, name:$repo) {
+        discussions(first:$n, orderBy:{field:CREATED_AT, direction:DESC}) {
+          nodes {
+            title url createdAt bodyText
+            category { name }
+            author { login avatarUrl }
+          }
+        }
+      }
+    }`;
+
+  try {
+    const res = await fetch('https://api.github.com/graphql', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${t}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'the-sport-fanalyst',
+      },
+      body: JSON.stringify({ query, variables: { owner, repo, n: 30 } }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) {
+      console.warn(`[announcements] GitHub API ${res.status} — none shown.`);
+      return [];
+    }
+    const json: any = await res.json();
+    const nodes = json?.data?.repository?.discussions?.nodes ?? [];
+    return nodes
+      .filter((n: any) => (n.category?.name ?? '') === ANNOUNCEMENTS_CATEGORY)
+      .filter((n: any) => {
+        const login = (n.author?.login ?? '').toLowerCase();
+        return login && approved.has(login);
+      })
+      .slice(0, limit)
+      .map((n: any): AnnouncementItem => ({
+        title: n.title,
+        url: n.url,
+        author: n.author?.login ?? null,
+        avatar: n.author?.avatarUrl ?? null,
+        createdAt: n.createdAt,
+        excerpt: (n.bodyText ?? '').replace(/\s+/g, ' ').slice(0, 140).trim(),
+      }));
+  } catch (err) {
+    console.warn('[announcements] fetch failed — none shown.', err);
+    return [];
+  }
+}

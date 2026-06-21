@@ -1,0 +1,21 @@
+---
+const a = { title: 'LA28 data drop: official athletics season bests now open', url: '#', author: 'Selinalytics', avatar: null, createdAt: new Date().toISOString(), excerpt: 'We just published the cleaned 2024-26 season-best dataset — open for projects and models.' };
+const fmt = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+---
+{a && (
+  <a class="ann" href={a.url} target="_blank" rel="noopener">
+    <span class="ann__tag">Announcement</span>
+    <span class="ann__title">{a.title}</span>
+    {a.excerpt && <span class="ann__excerpt">— {a.excerpt}</span>}
+    <span class="ann__meta">by {a.author} · {fmt(a.createdAt)} ↗</span>
+  </a>
+)}
+<style>
+  .ann { display: flex; align-items: center; gap: .8rem; background: var(--lane); color: var(--ink); text-decoration: none; padding: .65rem var(--gutter); border-bottom: 1px solid var(--ink); font-size: .9rem; flex-wrap: wrap; }
+  .ann:hover { background: #b9e83f; }
+  .ann__tag { font-family: var(--mono); font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; background: var(--ink); color: var(--lane); padding: .2rem .5rem; white-space: nowrap; }
+  .ann__title { font-family: var(--display); font-weight: 600; }
+  .ann__excerpt { color: var(--ink-soft); min-width: 0; }
+  .ann__meta { font-family: var(--mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); margin-left: auto; white-space: nowrap; }
+  @media (max-width: 640px) { .ann__excerpt { display: none; } .ann__meta { margin-left: 0; } }
+</style>
