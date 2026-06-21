@@ -9,6 +9,7 @@
   NODE_VERSION = "22"
   # Ensure the content submodule is fetched during the build.
   GIT_SUBMODULE_STRATEGY = "recursive"
+  SECRETS_SCAN_OMIT_KEYS = "GITHUB_CLIENT_SECRET,SESSION_SECRET"
 
 # The Astro Netlify adapter emits its own redirects/functions wiring,
 # so no manual [[redirects]] are needed.
