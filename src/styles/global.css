@@ -1,0 +1,160 @@
+/* ===========================================================
+   The Sport Fanalyst — design system
+   Motif: stadium track lanes. Structure reads like a stats sheet.
+   =========================================================== */
+
+:root {
+  /* palette */
+  --ink:        #10100E;   /* warm near-black */
+  --ink-soft:   #2A2A26;
+  --paper:      #FAF8F3;   /* warm paper */
+  --paper-dim:  #F0EDE4;
+  --line:       #DDD8CC;   /* hairline on paper */
+  --lane:       #C6F24E;   /* track-line chartreuse */
+  --brick:      #D6492F;   /* clay / start-line red */
+  --slate:      #4A6FA5;   /* paralympic cool */
+  --gray:       #6B6B63;
+  --gray-soft:  #9A968B;
+
+  /* type */
+  --display: 'Space Grotesk', system-ui, sans-serif;
+  --serif:   'Fraunces', Georgia, serif;
+  --mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* scale */
+  --rail: 6px;            /* lane stripe width */
+  --maxw: 1180px;
+  --gutter: clamp(1.1rem, 4vw, 2.6rem);
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.6;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .display { font-family: var(--display); }
+
+a { color: inherit; }
+
+img { max-width: 100%; display: block; }
+
+/* ---- layout helpers ---- */
+.wrap {
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gray);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.eyebrow::before {
+  content: '';
+  width: 1.6rem;
+  height: var(--rail);
+  background: var(--lane);
+  display: inline-block;
+}
+
+/* ---- the lane rail: signature divider ---- */
+.lane-rail {
+  height: var(--rail);
+  width: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--lane) 0 64px,
+    var(--ink) 64px 70px,
+    var(--brick) 70px 134px,
+    var(--ink) 134px 140px,
+    var(--slate) 140px 204px,
+    var(--ink) 204px 210px
+  );
+  background-size: 210px 100%;
+}
+
+/* ---- buttons ---- */
+.btn {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.7rem 1.2rem;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s;
+  cursor: pointer;
+}
+.btn:hover { transform: translate(-2px,-2px); box-shadow: 4px 4px 0 var(--lane); }
+.btn--ghost { background: transparent; color: var(--ink); }
+.btn--ghost:hover { box-shadow: 4px 4px 0 var(--brick); }
+
+/* ---- chips / tags ---- */
+.chip {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--gray);
+  white-space: nowrap;
+}
+.chip--data     { border-color: var(--slate);  color: var(--slate); }
+.chip--research { border-color: var(--brick);  color: var(--brick); }
+.chip--models   { border-color: var(--ink);    color: var(--ink); background: var(--lane); }
+.chip--apps     { border-color: var(--gray);   color: var(--ink); }
+.chip--olympic   { border-color: var(--ink); color: var(--ink); }
+.chip--paralympic{ border-color: var(--slate); color: var(--slate); }
+
+/* ---- section spacing ---- */
+.section { padding-block: clamp(3.2rem, 7vw, 6rem); }
+.section--tight { padding-block: clamp(2rem, 4vw, 3rem); }
+
+/* ---- a11y ---- */
+:focus-visible { outline: 3px solid var(--brick); outline-offset: 3px; }
+.skip {
+  position: absolute; left: -999px; top: 0;
+  background: var(--ink); color: var(--paper);
+  padding: .6rem 1rem; z-index: 100;
+}
+.skip:focus { left: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto; }
+  .btn:hover { transform: none; }
+}
+
+/* prose for markdown bodies */
+.prose { max-width: 70ch; }
+.prose h2 { margin-top: 2.4rem; font-size: 1.5rem; }
+.prose h3 { margin-top: 1.8rem; font-size: 1.15rem; }
+.prose p, .prose li { line-height: 1.7; }
+.prose code { font-family: var(--mono); font-size: .85em; background: var(--paper-dim); padding: .1rem .35rem; }
+.prose pre { background: var(--ink); color: var(--paper); padding: 1rem; overflow:auto; font-family: var(--mono); }
+.prose a { color: var(--brick); text-underline-offset: 3px; }

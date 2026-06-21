@@ -1,0 +1,88 @@
+---
+export const prerender = true;
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const contributors = await getCollection('contributors');
+const projects = await getCollection('projects');
+const roleOrder = ['Admin', 'Maintainer', 'Contributor', 'Member'];
+const sorted = [...contributors].sort(
+  (a, b) => roleOrder.indexOf(a.data.role) - roleOrder.indexOf(b.data.role)
+);
+const projCount = (name: string) =>
+  projects.filter((p) => p.data.creator === name || p.data.contributors.includes(name)).length;
+
+const roleBlurb: Record<string, string> = {
+  Admin: 'Founder. Full control of the platform.',
+  Maintainer: 'Trusted members who review submissions and steward sport sections.',
+  Contributor: 'Approved members who submit projects and create content.',
+  Member: 'Joined the community — commenting, joining projects, proposing ideas.',
+};
+---
+<Base title="Contributors — The Sport Fanalyst">
+  <section class="head">
+    <div class="wrap">
+      <p class="eyebrow">People</p>
+      <h1>Contributors</h1>
+      <p class="lead">
+        The community behind the analysis. Roles describe what someone can do — and everyone
+        starts as a member. Earn contributor status with your first approved submission.
+      </p>
+    </div>
+  </section>
+
+  <section class="wrap section">
+    {roleOrder.map((role) => {
+      const people = sorted.filter((c) => c.data.role === role);
+      if (people.length === 0) return null;
+      return (
+        <section class="rsec">
+          <header class="rhead">
+            <h2>{role}<i>{people.length}</i></h2>
+            <p>{roleBlurb[role]}</p>
+          </header>
+          <div class="cards">
+            {people.map((c) => (
+              <a href={`/contributors/${c.id}`} class="pc">
+                <span class="pc__av">{c.data.avatar_initials}</span>
+                <span class="pc__name">{c.data.name}</span>
+                <span class="pc__handle">@{c.data.handle}</span>
+                <span class="pc__bio">{c.data.bio}</span>
+                <span class="pc__foot">
+                  <span class="pc__focus">{c.data.focus.slice(0, 2).map((f) => <i class="chip">{f}</i>)}</span>
+                  <span class="pc__count">{projCount(c.data.name)} projects</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+      );
+    })}
+  </section>
+</Base>
+
+<style>
+  .head { border-bottom: 1px solid var(--line); padding-block: clamp(2.4rem, 5vw, 4rem) 2.4rem; }
+  .head h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); letter-spacing: -.03em; margin: 1rem 0 .8rem; }
+  .lead { max-width: 60ch; color: var(--ink-soft); margin: 0; }
+
+  .rsec { margin-bottom: 3rem; }
+  .rhead { border-bottom: 2px solid var(--ink); padding-bottom: .7rem; margin-bottom: 1.4rem; }
+  .rhead h2 { font-size: 1.4rem; margin: 0; display: flex; align-items: center; gap: .6rem; letter-spacing: -.02em; }
+  .rhead h2 i { font-style: normal; font-family: var(--mono); font-size: .8rem; color: var(--paper); background: var(--brick); padding: .1rem .5rem; }
+  .rhead p { margin: .3rem 0 0; color: var(--gray); font-size: .92rem; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.1rem; }
+  .pc {
+    display: flex; flex-direction: column; gap: .5rem; text-decoration: none; color: var(--ink);
+    border: 1px solid var(--line); border-top: var(--rail) solid var(--ink); padding: 1.4rem; transition: transform .15s, border-top-color .15s;
+  }
+  .pc:hover { transform: translateY(-3px); border-top-color: var(--lane); }
+  .pc__av { width: 48px; height: 48px; display: grid; place-items: center; background: var(--ink); color: var(--lane); font-family: var(--mono); font-weight: 500; }
+  .pc__name { font-family: var(--display); font-weight: 600; font-size: 1.15rem; }
+  .pc__handle { font-family: var(--mono); font-size: .74rem; color: var(--gray); margin-top: -.4rem; }
+  .pc__bio { font-size: .9rem; color: var(--ink-soft); flex: 1; }
+  .pc__foot { display: flex; justify-content: space-between; align-items: center; gap: .5rem; border-top: 1px solid var(--line); padding-top: .7rem; }
+  .pc__focus { display: flex; gap: .35rem; flex-wrap: wrap; }
+  .pc__count { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; color: var(--gray); white-space: nowrap; }
+</style>

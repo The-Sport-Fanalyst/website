@@ -1,0 +1,153 @@
+---
+import Base from '../layouts/Base.astro';
+import { fetchPublicProfile } from '../lib/github';
+import { ROLE_ABILITIES } from '../lib/roles';
+import { getCollection } from 'astro:content';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/login?next=/me', 302);
+
+// Enrich with live public GitHub data (repos, followers, bio).
+const gh = await fetchPublicProfile(user.login);
+
+// Does this person already have a curated contributor entry?
+const contributors = await getCollection('contributors');
+const profile = contributors.find(
+  (c) => c.data.handle.toLowerCase() === user.login.toLowerCase()
+);
+
+// Their projects, if any, by matching the curated name.
+const projects = await getCollection('projects');
+const theirs = profile
+  ? projects.filter(
+      (p) => p.data.creator === profile.data.name || p.data.contributors.includes(profile.data.name)
+    )
+  : [];
+
+const abilities = ROLE_ABILITIES[user.role];
+const fmtJoined = profile
+  ? profile.data.joined.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+  : null;
+---
+<Base title={`${user.name ?? user.login} — The Sport Fanalyst`}>
+  <section class="phead">
+    <div class="wrap phead__inner">
+      <img class="phead__av" src={user.avatar} alt="" width="96" height="96" />
+      <div class="phead__id">
+        <p class="eyebrow">Signed in · {user.role}</p>
+        <h1>{user.name ?? user.login}</h1>
+        <p class="phead__handle">
+          <a href={user.profileUrl}>@{user.login}</a>
+          {gh && <> · {gh.public_repos} repos · {gh.followers} followers</>}
+          {fmtJoined && <> · member since {fmtJoined}</>}
+        </p>
+        {gh?.bio && <p class="phead__bio">{gh.bio}</p>}
+      </div>
+      <a href="/logout" class="btn btn--ghost phead__out">Sign out</a>
+    </div>
+  </section>
+
+  <div class="wrap pgrid section">
+    <main class="pmain">
+      {!profile && (
+        <div class="callout">
+          <p class="eyebrow">Welcome</p>
+          <h2>You're a {user.role}. Let's make your first mark.</h2>
+          <p>
+            You don't have a contributor page yet — that's created with your first approved
+            contribution. Until Phase 2's submission flow lands, you can open a pull request
+            against the org with one of the templates.
+          </p>
+          <div class="callout__cta">
+            <a href="/submit" class="btn">Submit a project →</a>
+            <a href="/community" class="btn btn--ghost">Browse the board</a>
+          </div>
+        </div>
+      )}
+
+      {profile && (
+        <section>
+          <header class="band"><h2>Your projects ({theirs.length})</h2></header>
+          {theirs.length > 0 ? (
+            <ul class="plist">
+              {theirs.map((p) => (
+                <li>
+                  <a href={`/projects/${p.id}`}>
+                    <span class={`chip chip--${p.data.category.toLowerCase()}`}>{p.data.category}</span>
+                    <b>{p.data.title}</b>
+                    <i>{p.data.sport}</i>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : <p class="muted">No projects yet — your next contribution shows up here.</p>}
+          <p class="linkrow">
+            <a href={`/contributors/${profile.id}`}>View your public contributor page →</a>
+          </p>
+        </section>
+      )}
+    </main>
+
+    <aside class="pside">
+      <div class="panel">
+        <h3>Your role: {user.role}</h3>
+        <ul class="abil">{abilities.map((a) => <li>{a}</li>)}</ul>
+        <p class="muted small">Roles are granted by maintainers. <a href="/contribute">How it works →</a></p>
+      </div>
+      <div class="panel">
+        <h3>Identity</h3>
+        <dl class="kv">
+          <dt>GitHub</dt><dd><a href={user.profileUrl}>@{user.login}</a></dd>
+          <dt>Source</dt><dd>GitHub OAuth</dd>
+        </dl>
+        <p class="muted small">Sign-in is handled by GitHub — we never see your password.</p>
+      </div>
+    </aside>
+  </div>
+</Base>
+
+<style>
+  .phead { border-bottom: 1px solid var(--line); background: var(--paper-dim); padding-block: clamp(2rem, 4vw, 3rem); }
+  .phead__inner { display: flex; gap: 1.6rem; align-items: flex-start; }
+  .phead__av { border: 2px solid var(--ink); flex-shrink: 0; }
+  .phead__id { flex: 1; }
+  .phead h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); letter-spacing: -.03em; margin: .5rem 0 .3rem; }
+  .phead__handle { font-family: var(--mono); font-size: .82rem; color: var(--gray); margin: 0 0 .8rem; }
+  .phead__handle a { color: var(--brick); text-decoration: none; }
+  .phead__bio { max-width: 56ch; color: var(--ink-soft); margin: 0; }
+  .phead__out { align-self: center; }
+  @media (max-width: 620px) { .phead__inner { flex-wrap: wrap; } .phead__out { align-self: flex-start; } }
+
+  .pgrid { display: grid; grid-template-columns: 1fr 300px; gap: 2.5rem; align-items: start; }
+  @media (max-width: 820px) { .pgrid { grid-template-columns: 1fr; } }
+
+  .callout { border: 1px solid var(--line); border-left: var(--rail) solid var(--lane); padding: 1.6rem 1.8rem; }
+  .callout h2 { margin: .4rem 0 .6rem; font-size: 1.5rem; letter-spacing: -.02em; }
+  .callout p { color: var(--ink-soft); max-width: 60ch; }
+  .callout__cta { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1.2rem; }
+
+  .band { border-bottom: 2px solid var(--ink); padding-bottom: .7rem; margin-bottom: 1.2rem; }
+  .band h2 { margin: 0; font-size: 1.4rem; }
+  .plist { list-style: none; padding: 0; margin: 0; }
+  .plist a { display: flex; align-items: center; gap: .8rem; padding: .9rem 0; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--ink); }
+  .plist b { font-family: var(--display); font-weight: 600; }
+  .plist i { font-style: normal; font-family: var(--mono); font-size: .74rem; text-transform: uppercase; color: var(--gray); margin-left: auto; }
+  .plist a:hover b { color: var(--brick); }
+  .linkrow { margin-top: 1.2rem; }
+  .linkrow a { color: var(--brick); font-family: var(--mono); font-size: .82rem; text-transform: uppercase; text-decoration: none; }
+
+  .pside { display: flex; flex-direction: column; gap: 1.4rem; }
+  .panel { border: 1px solid var(--line); border-top: var(--rail) solid var(--ink); padding: 1.2rem 1.3rem; }
+  .panel h3 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 .9rem; }
+  .abil { list-style: none; padding: 0; margin: 0 0 .8rem; }
+  .abil li { font-size: .9rem; padding: .35rem 0; border-bottom: 1px dashed var(--line); color: var(--ink-soft); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: .4rem 1rem; margin: 0 0 .8rem; }
+  .kv dt { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; color: var(--gray); }
+  .kv dd { margin: 0; font-size: .9rem; text-align: right; }
+  .kv dd a { color: var(--brick); text-decoration: none; }
+  .muted { color: var(--gray); }
+  .small { font-size: .82rem; }
+  .muted a { color: var(--brick); }
+</style>

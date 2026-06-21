@@ -1,0 +1,84 @@
+---
+export const prerender = true;
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const sports = (await getCollection('sports')).sort((a, b) => a.data.order - b.data.order);
+const projects = await getCollection('projects');
+const countFor = (slug: string) =>
+  projects.filter((p) => p.data.sport.toLowerCase() === slug.toLowerCase()).length;
+---
+<Base title="Sports — The Sport Fanalyst">
+  <section class="head">
+    <div class="wrap">
+      <p class="eyebrow">Directory</p>
+      <h1>Sports hubs</h1>
+      <p class="lead">
+        Each sport has its own hub for data, research, models, and apps — spanning the Summer
+        Olympics, Winter Olympics, and Paralympics. Starting with four; growing with the community.
+      </p>
+    </div>
+  </section>
+
+  <section class="wrap section">
+    <div class="dir">
+      {sports.map((s, i) => (
+        <a href={`/sports/${s.data.slug}`} class="row">
+          <span class="row__num">{String(i + 1).padStart(2, '0')}</span>
+          <span class="row__icon">{s.data.icon}</span>
+          <span class="row__body">
+            <span class="row__name">{s.data.name}</span>
+            <span class="row__desc">{s.data.description}</span>
+          </span>
+          <span class="row__side">
+            <span class="row__games">
+              {s.data.olympic && <i class="chip chip--olympic">Olympic</i>}
+              {s.data.paralympic && <i class="chip chip--paralympic">Para</i>}
+            </span>
+            <span class="row__count">{countFor(s.data.slug)} projects</span>
+          </span>
+          <span class="row__arrow" aria-hidden="true">→</span>
+        </a>
+      ))}
+    </div>
+
+    <p class="note">
+      Want a sport that isn't here yet? Propose it on the
+      <a href="/community">community board</a> — new hubs start as a single dataset or question.
+    </p>
+  </section>
+</Base>
+
+<style>
+  .head { border-bottom: 1px solid var(--line); padding-block: clamp(2.4rem, 5vw, 4rem) 2.4rem; }
+  .head h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); letter-spacing: -.03em; margin: 1rem 0 .8rem; }
+  .lead { max-width: 60ch; color: var(--ink-soft); margin: 0; }
+
+  .dir { border-top: 2px solid var(--ink); }
+  .row {
+    display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 1.2rem;
+    padding: 1.5rem 0; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--ink);
+    transition: padding-left .15s ease;
+  }
+  .row:hover { padding-left: .8rem; background: linear-gradient(90deg, var(--paper-dim), transparent 40%); }
+  .row__num { font-family: var(--mono); font-size: .8rem; color: var(--gray-soft); }
+  .row__icon { font-size: 1.6rem; color: var(--brick); width: 1.6rem; }
+  .row__name { font-family: var(--display); font-weight: 600; font-size: 1.4rem; display: block; letter-spacing: -.01em; }
+  .row__desc { color: var(--gray); font-size: .92rem; display: block; margin-top: .25rem; max-width: 60ch; }
+  .row__side { display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; }
+  .row__games { display: flex; gap: .35rem; }
+  .row__count { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; color: var(--gray); }
+  .row__arrow { font-size: 1.3rem; color: var(--gray-soft); }
+  .row:hover .row__arrow { color: var(--brick); }
+
+  .note { margin-top: 2rem; color: var(--gray); font-size: .95rem; }
+  .note a { color: var(--brick); }
+
+  @media (max-width: 720px) {
+    .row { grid-template-columns: auto 1fr; gap: .8rem 1rem; }
+    .row__icon { grid-row: 1 / 3; }
+    .row__side { grid-column: 1 / 3; flex-direction: row; align-items: center; justify-content: space-between; }
+    .row__arrow { display: none; }
+    .row__num { display: none; }
+  }
+</style>

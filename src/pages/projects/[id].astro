@@ -1,0 +1,156 @@
+---
+export const prerender = true;
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((p) => ({ params: { id: p.id }, props: { project: p } }));
+}
+
+const { project } = Astro.props;
+const d = project.data;
+const { Content } = await render(project);
+
+const contributors = await getCollection('contributors');
+const team = [d.creator, ...d.contributors];
+const profileFor = (name: string) => contributors.find((c) => c.data.name === name);
+const fmt = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+<Base title={`${d.title} — The Sport Fanalyst`} description={d.description}>
+  <article>
+    <header class="phead">
+      <div class="wrap">
+        <p class="eyebrow">
+          <a href="/projects" class="crumb">Projects</a> /
+          <a href={`/sports/${d.sport.toLowerCase()}`} class="crumb">{d.sport}</a>
+        </p>
+        <div class="phead__top">
+          <span class={`chip chip--${d.category.toLowerCase()}`}>{d.category}</span>
+          {d.games.map((g) => <span class="chip">{g}</span>)}
+          <span class="phead__status" data-status={d.status}>{d.status}</span>
+        </div>
+        <h1>{d.title}</h1>
+        <p class="phead__desc">{d.description}</p>
+        <div class="phead__cta">
+          {d.github_url && <a href={d.github_url} class="btn">View repository ↗</a>}
+          {d.demo_url && <a href={d.demo_url} class="btn btn--ghost">Open demo ↗</a>}
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap pbody">
+      <div class="pbody__main prose">
+        <Content />
+
+        <div class="repo">
+          <h2>On GitHub</h2>
+          <p>This project lives in the open. Everything below is part of the repository — the source of truth.</p>
+          <ul class="repo__list">
+            <li><span>README</span> Overview, setup, and how to run it</li>
+            <li><span>Documentation</span> Methodology and data dictionary</li>
+            <li><span>Issues</span> Open tasks and good-first-issues</li>
+            <li><span>Pull requests</span> How changes get reviewed and merged</li>
+            <li><span>Contributors</span> Everyone who shaped the work</li>
+          </ul>
+          {d.github_url && <a href={d.github_url} class="btn btn--ghost">Open on GitHub ↗</a>}
+        </div>
+      </div>
+
+      <aside class="pbody__side">
+        <div class="trust">
+          <h3>Provenance</h3>
+          <dl>
+            <dt>Author</dt>
+            <dd>
+              {profileFor(d.creator)
+                ? <a href={`/contributors/${profileFor(d.creator)!.id}`}>{d.creator}</a>
+                : d.creator}
+            </dd>
+            <dt>Sport</dt>
+            <dd><a href={`/sports/${d.sport.toLowerCase()}`}>{d.sport}</a></dd>
+            <dt>Category</dt>
+            <dd>{d.category}</dd>
+            <dt>Created</dt>
+            <dd>{fmt(d.created_date)}</dd>
+            <dt>Status</dt>
+            <dd>{d.status}</dd>
+          </dl>
+        </div>
+
+        <div class="trust">
+          <h3>Data sources</h3>
+          {d.data_sources.length > 0
+            ? <ul class="srcs">{d.data_sources.map((s) => <li>{s}</li>)}</ul>
+            : <p class="muted">No external data sources listed.</p>}
+        </div>
+
+        <div class="trust">
+          <h3>Team ({team.length})</h3>
+          <ul class="team">
+            {team.map((name) => {
+              const prof = profileFor(name);
+              return (
+                <li>
+                  {prof
+                    ? <a href={`/contributors/${prof.id}`} class="team__p">
+                        <span class="team__av">{prof.data.avatar_initials}</span>{name}
+                      </a>
+                    : <span class="team__p"><span class="team__av">{name.split(' ').map((n) => n[0]).join('')}</span>{name}</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {d.status === 'Seeking collaborators' && (
+          <a href="/community" class="join-call">
+            <b>This project needs help.</b>
+            <span>Claim a task on the community board →</span>
+          </a>
+        )}
+      </aside>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .phead { border-bottom: 1px solid var(--line); background: var(--paper-dim); padding-block: clamp(2rem, 4vw, 3.4rem); }
+  .crumb { color: var(--gray); text-decoration: none; }
+  .crumb:hover { color: var(--brick); }
+  .phead__top { display: flex; gap: .5rem; align-items: center; margin: 1rem 0 .8rem; flex-wrap: wrap; }
+  .phead__status { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; color: var(--gray); }
+  .phead__status[data-status="Seeking collaborators"] { color: var(--brick); }
+  .phead h1 { font-size: clamp(2rem, 5vw, 3.2rem); letter-spacing: -.03em; margin: 0 0 .8rem; max-width: 22ch; }
+  .phead__desc { max-width: 60ch; color: var(--ink-soft); font-size: 1.08rem; margin: 0 0 1.4rem; }
+  .phead__cta { display: flex; gap: .7rem; flex-wrap: wrap; }
+
+  .pbody { display: grid; grid-template-columns: 1fr 320px; gap: 3rem; padding-block: clamp(2.4rem, 5vw, 3.6rem); align-items: start; }
+  @media (max-width: 860px) { .pbody { grid-template-columns: 1fr; } }
+
+  .repo { margin-top: 3rem; border-top: 2px solid var(--ink); padding-top: 1.6rem; }
+  .repo h2 { margin-top: 0; }
+  .repo__list { list-style: none; padding: 0; margin: 1.2rem 0; }
+  .repo__list li { padding: .7rem 0; border-bottom: 1px solid var(--line); font-size: .95rem; color: var(--ink-soft); }
+  .repo__list span { font-family: var(--mono); font-size: .74rem; text-transform: uppercase; color: var(--ink); margin-right: .8rem; display: inline-block; min-width: 8.5rem; }
+
+  .pbody__side { position: sticky; top: 90px; display: flex; flex-direction: column; gap: 1.6rem; }
+  @media (max-width: 860px) { .pbody__side { position: static; } }
+  .trust { border: 1px solid var(--line); border-top: var(--rail) solid var(--ink); padding: 1.2rem 1.3rem; }
+  .trust h3 { font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .1em; color: var(--gray); margin: 0 0 1rem; }
+  .trust dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .55rem 1rem; }
+  .trust dt { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; color: var(--gray-soft); }
+  .trust dd { margin: 0; font-size: .92rem; text-align: right; }
+  .trust dd a { color: var(--brick); text-decoration: none; }
+  .srcs { list-style: none; padding: 0; margin: 0; }
+  .srcs li { font-size: .88rem; padding: .45rem 0; border-bottom: 1px dashed var(--line); color: var(--ink-soft); }
+  .muted { color: var(--gray-soft); font-size: .9rem; margin: 0; }
+  .team { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; }
+  .team__p { display: flex; align-items: center; gap: .6rem; text-decoration: none; color: var(--ink); font-size: .92rem; }
+  .team__p:hover { color: var(--brick); }
+  .team__av { width: 30px; height: 30px; display: grid; place-items: center; background: var(--ink); color: var(--lane); font-family: var(--mono); font-size: .7rem; }
+  .join-call { display: block; background: var(--lane); padding: 1.1rem 1.3rem; text-decoration: none; color: var(--ink); }
+  .join-call b { display: block; font-family: var(--display); }
+  .join-call span { font-size: .88rem; }
+  .join-call:hover { box-shadow: inset 0 0 0 2px var(--ink); }
+</style>

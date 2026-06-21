@@ -1,0 +1,81 @@
+---
+interface Props {
+  title: string;
+  creator: string;
+  sport: string;
+  category: 'Data' | 'Research' | 'Models' | 'Apps';
+  description: string;
+  status: string;
+  github_url?: string;
+  demo_url?: string;
+  contributors?: string[];
+  games?: string[];
+  href: string;
+}
+const {
+  title, creator, sport, category, description, status,
+  github_url, demo_url, contributors = [], games = [], href,
+} = Astro.props;
+
+const catClass = `chip chip--${category.toLowerCase()}`;
+---
+<article class="card">
+  <div class="card__top">
+    <span class={catClass}>{category}</span>
+    <span class="card__status" data-status={status}>{status}</span>
+  </div>
+
+  <h3 class="card__title"><a href={href}>{title}</a></h3>
+  <p class="card__desc">{description}</p>
+
+  <div class="card__meta">
+    <span class="card__sport">{sport}</span>
+    {games.length > 0 && <span class="card__dot">·</span>}
+    {games.length > 0 && <span>{games.join(' · ')}</span>}
+  </div>
+
+  <div class="card__foot">
+    <span class="card__by">by <b>{creator}</b>{contributors.length > 0 && ` +${contributors.length}`}</span>
+    <span class="card__links">
+      {github_url && <a href={github_url} aria-label="GitHub repository">code</a>}
+      {demo_url && <a href={demo_url} aria-label="Live demo">demo</a>}
+    </span>
+  </div>
+</article>
+
+<style>
+  .card {
+    display: flex; flex-direction: column; gap: .7rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-left: var(--rail) solid var(--ink);
+    padding: 1.3rem 1.4rem 1.1rem;
+    transition: border-left-color .15s ease, transform .15s ease;
+    height: 100%;
+  }
+  .card:hover { border-left-color: var(--lane); transform: translateY(-3px); }
+  .card__top { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+  .card__status {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--gray);
+  }
+  .card__status[data-status="Seeking collaborators"] { color: var(--brick); }
+  .card__status[data-status="Active"]::before { content: '● '; color: var(--lane); }
+  .card__title { font-size: 1.18rem; font-weight: 600; line-height: 1.25; margin: 0; letter-spacing: -.01em; }
+  .card__title a { text-decoration: none; }
+  .card__title a:hover { color: var(--brick); }
+  .card__desc { font-size: .95rem; color: var(--ink-soft); margin: 0; flex: 1; }
+  .card__meta {
+    font-family: var(--mono); font-size: .74rem; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--gray); display: flex; gap: .5rem; align-items: center;
+  }
+  .card__dot { color: var(--line); }
+  .card__foot {
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--line); padding-top: .8rem; font-size: .82rem; color: var(--gray);
+  }
+  .card__by b { color: var(--ink); font-weight: 600; }
+  .card__links { display: flex; gap: .8rem; font-family: var(--mono); font-size: .74rem; text-transform: uppercase; }
+  .card__links a { color: var(--slate); text-decoration: none; border-bottom: 1px solid transparent; }
+  .card__links a:hover { border-color: var(--slate); }
+</style>

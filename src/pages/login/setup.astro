@@ -1,0 +1,73 @@
+---
+import Base from '../../layouts/Base.astro';
+import { isConfigured } from '../../lib/github';
+
+export const prerender = false;
+
+// If it's already configured, no reason to be here.
+if (isConfigured()) return Astro.redirect('/login', 302);
+
+const origin = Astro.url.origin;
+---
+<Base title="Finish setup — The Sport Fanalyst">
+  <section class="wrap setup">
+    <p class="eyebrow">Phase 2 · One-time setup</p>
+    <h1>Connect GitHub sign-in</h1>
+    <p class="lead">
+      Login is ready in the code, but it needs a GitHub OAuth app to talk to.
+      This takes about two minutes and only has to be done once.
+    </p>
+
+    <ol class="steps">
+      <li>
+        <h3>Register an OAuth app</h3>
+        <p>Go to <a href="https://github.com/settings/developers">GitHub → Settings → Developer settings → OAuth Apps → New OAuth App</a>. Use these values:</p>
+        <dl class="kv">
+          <dt>Application name</dt><dd>The Sport Fanalyst</dd>
+          <dt>Homepage URL</dt><dd><code>{origin}</code></dd>
+          <dt>Authorization callback URL</dt><dd><code>{origin}/auth/callback</code></dd>
+        </dl>
+      </li>
+      <li>
+        <h3>Copy the credentials</h3>
+        <p>After creating it, copy the <b>Client ID</b> and generate a <b>Client secret</b>.</p>
+      </li>
+      <li>
+        <h3>Add them to <code>.env</code></h3>
+        <p>Create a file named <code>.env</code> in the project root (there's a <code>.env.example</code> to copy from):</p>
+        <pre><code>GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
+SESSION_SECRET=run: openssl rand -hex 32
+SITE_URL={origin}</code></pre>
+      </li>
+      <li>
+        <h3>Restart the dev server</h3>
+        <p>Stop and re-run <code>npm run dev</code>, then head to <a href="/login">sign in</a>.</p>
+      </li>
+    </ol>
+
+    <p class="note">
+      Deploying to production? Register a second OAuth app with your live domain's
+      callback URL, and set the same four variables in your host's environment settings.
+    </p>
+  </section>
+</Base>
+
+<style>
+  .setup { max-width: 760px; padding-block: clamp(2.4rem, 5vw, 4rem); }
+  .setup h1 { font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -.03em; margin: 1rem 0 .8rem; }
+  .lead { color: var(--ink-soft); max-width: 60ch; margin: 0 0 2.4rem; }
+  .steps { list-style: none; counter-reset: s; padding: 0; margin: 0; }
+  .steps > li { counter-increment: s; border-top: 1px solid var(--line); padding: 1.6rem 0 1.6rem 3rem; position: relative; }
+  .steps > li::before { content: counter(s, decimal-leading-zero); position: absolute; left: 0; top: 1.6rem; font-family: var(--mono); color: var(--brick); font-size: .9rem; }
+  .steps h3 { margin: 0 0 .5rem; font-size: 1.2rem; }
+  .steps p { margin: 0 0 .8rem; color: var(--ink-soft); }
+  .steps a { color: var(--brick); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: .4rem 1rem; margin: 0; }
+  .kv dt { font-family: var(--mono); font-size: .76rem; text-transform: uppercase; color: var(--gray); }
+  .kv dd { margin: 0; }
+  code { font-family: var(--mono); font-size: .86em; background: var(--paper-dim); padding: .1rem .4rem; }
+  pre { background: var(--ink); color: var(--paper); padding: 1rem 1.2rem; overflow:auto; }
+  pre code { background: none; color: inherit; padding: 0; line-height: 1.7; }
+  .note { margin-top: 2rem; padding: 1rem 1.2rem; border-left: var(--rail) solid var(--slate); color: var(--gray); font-size: .92rem; }
+</style>

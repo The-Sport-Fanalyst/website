@@ -1,0 +1,72 @@
+---
+export const prerender = true;
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+
+export async function getStaticPaths() {
+  const contributors = await getCollection('contributors');
+  return contributors.map((c) => ({ params: { id: c.id }, props: { person: c } }));
+}
+
+const { person } = Astro.props;
+const d = person.data;
+const projects = await getCollection('projects');
+const theirs = projects.filter(
+  (p) => p.data.creator === d.name || p.data.contributors.includes(d.name)
+);
+const fmt = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+---
+<Base title={`${d.name} — The Sport Fanalyst`} description={d.bio}>
+  <section class="chead">
+    <div class="wrap chead__inner">
+      <span class="chead__av">{d.avatar_initials}</span>
+      <div>
+        <p class="eyebrow"><a href="/contributors" class="crumb">Contributors</a> / {d.role}</p>
+        <h1>{d.name}</h1>
+        <p class="chead__handle">@{d.handle} · joined {fmt(d.joined)}</p>
+        <p class="chead__bio">{d.bio}</p>
+        <div class="chead__row">
+          <span class="chead__focus">{d.focus.map((f) => <i class="chip">{f}</i>)}</span>
+          {d.github && <a href={d.github} class="btn btn--ghost">GitHub ↗</a>}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap section">
+    <header class="band"><h2>Projects ({theirs.length})</h2></header>
+    {theirs.length > 0 ? (
+      <div class="grid">
+        {theirs.map((p) => (
+          <ProjectCard
+            title={p.data.title} creator={p.data.creator} sport={p.data.sport}
+            category={p.data.category} description={p.data.description} status={p.data.status}
+            github_url={p.data.github_url} demo_url={p.data.demo_url}
+            contributors={p.data.contributors} games={p.data.games}
+            href={`/projects/${p.id}`}
+          />
+        ))}
+      </div>
+    ) : <p class="empty">No projects yet — but every contributor starts somewhere.</p>}
+  </section>
+</Base>
+
+<style>
+  .chead { border-bottom: 1px solid var(--line); background: var(--paper-dim); padding-block: clamp(2.2rem, 5vw, 3.6rem); }
+  .chead__inner { display: flex; gap: 2rem; align-items: flex-start; }
+  .chead__av { width: 88px; height: 88px; flex-shrink: 0; display: grid; place-items: center; background: var(--ink); color: var(--lane); font-family: var(--mono); font-size: 1.8rem; }
+  .crumb { color: var(--gray); text-decoration: none; }
+  .crumb:hover { color: var(--brick); }
+  .chead h1 { font-size: clamp(2rem, 5vw, 3.2rem); letter-spacing: -.03em; margin: .6rem 0 .3rem; }
+  .chead__handle { font-family: var(--mono); font-size: .82rem; color: var(--gray); margin: 0 0 1rem; }
+  .chead__bio { max-width: 60ch; color: var(--ink-soft); font-size: 1.05rem; margin: 0 0 1.2rem; }
+  .chead__row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .chead__focus { display: flex; gap: .4rem; flex-wrap: wrap; }
+  @media (max-width: 620px) { .chead__inner { flex-direction: column; gap: 1.2rem; } }
+
+  .band { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--ink); padding-bottom: .7rem; margin-bottom: 1.4rem; }
+  .band h2 { margin: 0; font-size: 1.4rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.1rem; }
+  .empty { color: var(--gray); border: 1px dashed var(--line); padding: 1.8rem; }
+</style>

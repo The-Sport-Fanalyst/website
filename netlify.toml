@@ -1,0 +1,14 @@
+# Netlify build settings for The Sport Fanalyst.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # package.json requires Node >=22.12.0, so pin Node 22 here to match.
+  NODE_VERSION = "22"
+  # Ensure the content submodule is fetched during the build.
+  GIT_SUBMODULE_STRATEGY = "recursive"
+
+# The Astro Netlify adapter emits its own redirects/functions wiring,
+# so no manual [[redirects]] are needed.

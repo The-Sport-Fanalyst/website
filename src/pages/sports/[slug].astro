@@ -1,0 +1,164 @@
+---
+export const prerender = true;
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+
+export async function getStaticPaths() {
+  const sports = await getCollection('sports');
+  return sports.map((s) => ({ params: { slug: s.data.slug }, props: { sport: s } }));
+}
+
+const { sport } = Astro.props;
+const { Content } = await render(sport);
+
+const allProjects = await getCollection('projects');
+const sportProjects = allProjects.filter(
+  (p) => p.data.sport.toLowerCase() === sport.data.name.toLowerCase()
+);
+const contributors = await getCollection('contributors');
+
+const cats = ['Data', 'Research', 'Models', 'Apps'] as const;
+const byCat = (c: string) => sportProjects.filter((p) => p.data.category === c);
+
+// contributors who appear on this sport's projects
+const names = new Set<string>();
+sportProjects.forEach((p) => { names.add(p.data.creator); p.data.contributors.forEach((n) => names.add(n)); });
+const sportContributors = contributors.filter((c) => names.has(c.data.name));
+
+const featured = sportProjects.filter((p) => p.data.featured);
+---
+<Base title={`${sport.data.name} — The Sport Fanalyst`} description={sport.data.description}>
+  <section class="shead">
+    <div class="wrap shead__inner">
+      <div class="shead__main">
+        <p class="eyebrow"><a href="/sports" class="crumb">Sports</a> / {sport.data.name}</p>
+        <h1><span class="shead__icon">{sport.data.icon}</span>{sport.data.name}</h1>
+        <p class="shead__desc">{sport.data.description}</p>
+        <div class="shead__chips">
+          {sport.data.olympic && <span class="chip chip--olympic">Olympic</span>}
+          {sport.data.paralympic && <span class="chip chip--paralympic">Paralympic</span>}
+          {sport.data.la28Venue && <span class="chip">LA28 · {sport.data.la28Venue}</span>}
+        </div>
+      </div>
+      <aside class="shead__facts">
+        <h4>Disciplines</h4>
+        <ul>{sport.data.disciplines.map((d) => <li>{d}</li>)}</ul>
+      </aside>
+    </div>
+  </section>
+
+  <nav class="subnav" aria-label="Sections">
+    <div class="wrap subnav__inner">
+      <a href="#about">About</a>
+      {cats.map((c) => <a href={`#${c.toLowerCase()}`}>{c} <i>{byCat(c).length}</i></a>)}
+      <a href="#contributors">Contributors <i>{sportContributors.length}</i></a>
+    </div>
+  </nav>
+
+  <div class="wrap section">
+    <section id="about" class="prose about">
+      <Content />
+    </section>
+
+    {featured.length > 0 && (
+      <section class="fbox">
+        <p class="eyebrow">Featured</p>
+        <div class="grid">
+          {featured.map((p) => (
+            <ProjectCard
+              title={p.data.title} creator={p.data.creator} sport={p.data.sport}
+              category={p.data.category} description={p.data.description} status={p.data.status}
+              github_url={p.data.github_url} demo_url={p.data.demo_url}
+              contributors={p.data.contributors} games={p.data.games}
+              href={`/projects/${p.id}`}
+            />
+          ))}
+        </div>
+      </section>
+    )}
+
+    {cats.map((c) => (
+      <section id={c.toLowerCase()} class="catsec">
+        <header class="band">
+          <h2><span class={`chip chip--${c.toLowerCase()}`}>{c}</span></h2>
+          <a href={`/projects?category=${c}`} class="band__link">More {c} →</a>
+        </header>
+        {byCat(c).length > 0 ? (
+          <div class="grid">
+            {byCat(c).map((p) => (
+              <ProjectCard
+                title={p.data.title} creator={p.data.creator} sport={p.data.sport}
+                category={p.data.category} description={p.data.description} status={p.data.status}
+                github_url={p.data.github_url} demo_url={p.data.demo_url}
+                contributors={p.data.contributors} games={p.data.games}
+                href={`/projects/${p.id}`}
+              />
+            ))}
+          </div>
+        ) : (
+          <div class="empty">
+            <p>No {c.toLowerCase()} projects yet. This is an open lane.</p>
+            <a href="/submit" class="btn btn--ghost">Add the first one →</a>
+          </div>
+        )}
+      </section>
+    ))}
+
+    <section id="contributors" class="catsec">
+      <header class="band"><h2>Contributors</h2></header>
+      {sportContributors.length > 0 ? (
+        <ul class="people">
+          {sportContributors.map((c) => (
+            <li><a href={`/contributors/${c.id}`} class="person">
+              <span class="person__av">{c.data.avatar_initials}</span>
+              <span><b>{c.data.name}</b><i>{c.data.role}</i></span>
+            </a></li>
+          ))}
+        </ul>
+      ) : <p class="empty">Be the first to contribute to {sport.data.name}.</p>}
+    </section>
+  </div>
+</Base>
+
+<style>
+  .shead { border-bottom: 1px solid var(--line); background: var(--paper-dim); }
+  .shead__inner { display: grid; grid-template-columns: 1fr 260px; gap: 2.5rem; padding-block: clamp(2.2rem, 5vw, 3.6rem); }
+  .crumb { color: var(--gray); text-decoration: none; }
+  .crumb:hover { color: var(--brick); }
+  .shead h1 { font-size: clamp(2.4rem, 6vw, 4rem); letter-spacing: -.03em; margin: .8rem 0; display: flex; align-items: center; gap: .8rem; }
+  .shead__icon { color: var(--brick); }
+  .shead__desc { max-width: 56ch; color: var(--ink-soft); margin: 0 0 1.2rem; font-size: 1.08rem; }
+  .shead__chips { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .shead__facts { border-left: var(--rail) solid var(--lane); padding-left: 1.2rem; }
+  .shead__facts h4 { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--gray); margin: 0 0 .7rem; }
+  .shead__facts ul { list-style: none; margin: 0; padding: 0; }
+  .shead__facts li { font-size: .92rem; padding: .25rem 0; border-bottom: 1px dashed var(--line); }
+  @media (max-width: 760px) { .shead__inner { grid-template-columns: 1fr; gap: 1.5rem; } }
+
+  .subnav { position: sticky; top: 67px; z-index: 30; background: var(--paper); border-bottom: 1px solid var(--line); }
+  .subnav__inner { display: flex; gap: 1.4rem; overflow-x: auto; padding-block: .9rem; }
+  .subnav a { font-family: var(--mono); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; text-decoration: none; color: var(--ink-soft); white-space: nowrap; }
+  .subnav a:hover { color: var(--brick); }
+  .subnav a i { color: var(--gray-soft); font-style: normal; }
+
+  .about { margin-bottom: 3rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.1rem; }
+  .fbox { margin-bottom: 3rem; }
+  .fbox .grid { margin-top: 1rem; }
+
+  .catsec { margin-bottom: 3rem; scroll-margin-top: 130px; }
+  .band { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 2px solid var(--ink); padding-bottom: .7rem; margin-bottom: 1.4rem; }
+  .band h2 { margin: 0; font-size: 1.3rem; }
+  .band__link { font-family: var(--mono); font-size: .76rem; text-transform: uppercase; text-decoration: none; color: var(--brick); }
+
+  .empty { border: 1px dashed var(--line); padding: 1.8rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; color: var(--gray); }
+  .empty p { margin: 0; }
+
+  .people { list-style: none; display: flex; flex-wrap: wrap; gap: .8rem; padding: 0; margin: 0; }
+  .person { display: flex; align-items: center; gap: .7rem; text-decoration: none; color: var(--ink); border: 1px solid var(--line); padding: .6rem .9rem; }
+  .person:hover { border-color: var(--ink); }
+  .person__av { width: 36px; height: 36px; display: grid; place-items: center; background: var(--ink); color: var(--lane); font-family: var(--mono); font-size: .8rem; }
+  .person b { display: block; font-family: var(--display); font-size: .95rem; }
+  .person i { font-style: normal; font-family: var(--mono); font-size: .68rem; text-transform: uppercase; color: var(--gray); }
+</style>

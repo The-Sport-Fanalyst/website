@@ -1,0 +1,69 @@
+---
+const year = new Date().getFullYear();
+---
+<footer class="ftr">
+  <div class="lane-rail"></div>
+  <div class="wrap ftr__inner">
+    <div class="ftr__brand">
+      <span class="ftr__name">The Sport <b>Fan</b>alyst</span>
+      <p class="ftr__tag">Open Olympic &amp; Paralympic analytics. Code, data, and stories — built in the open for LA28 and beyond.</p>
+    </div>
+    <div class="ftr__cols">
+      <div>
+        <h4>Explore</h4>
+        <a href="/sports">Sports</a>
+        <a href="/projects">Projects</a>
+        <a href="/community">Community board</a>
+        <a href="/contributors">Contributors</a>
+      </div>
+      <div>
+        <h4>Build</h4>
+        <a href="/contribute">How to contribute</a>
+        <a href="/contribute#templates">Submission templates</a>
+        <a href="https://github.com/thesportfanalyst">GitHub org ↗</a>
+      </div>
+      <div>
+        <h4>Games</h4>
+        <a href="/projects?season=Summer&type=Olympics">Summer Olympics</a>
+        <a href="/projects?season=Summer&type=Paralympics">Summer Paralympics</a>
+        <a href="/projects?season=Winter&type=Olympics">Winter Olympics</a>
+        <a href="/projects?season=Winter&type=Paralympics">Winter Paralympics</a>
+      </div>
+    </div>
+  </div>
+  <div class="wrap ftr__legal">
+    <span>© {year} The Sport Fanalyst — community project, not affiliated with the IOC or LA28.</span>
+    <span class="mono">Source of truth: github.com/thesportfanalyst</span>
+  </div>
+</footer>
+
+<style>
+  .ftr { background: var(--ink); color: var(--paper-dim); margin-top: 4rem; }
+  .ftr__inner {
+    display: grid; grid-template-columns: 1.3fr 2fr; gap: 2.5rem;
+    padding-block: 3rem 2rem;
+  }
+  .ftr__name { font-family: var(--display); font-weight: 700; font-size: 1.3rem; color: var(--paper); }
+  .ftr__name b { color: var(--lane); }
+  .ftr__tag { color: var(--gray-soft); max-width: 34ch; margin-top: .6rem; }
+  .ftr__cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+  .ftr__cols h4 {
+    font-family: var(--mono); font-size: .72rem; text-transform: uppercase;
+    letter-spacing: .12em; color: var(--lane); margin: 0 0 .8rem;
+  }
+  .ftr__cols a {
+    display: block; color: var(--paper-dim); text-decoration: none;
+    font-size: .92rem; padding: .25rem 0;
+  }
+  .ftr__cols a:hover { color: var(--lane); }
+  .ftr__legal {
+    display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    border-top: 1px solid #2A2A26; padding-block: 1.2rem 2rem;
+    font-size: .78rem; color: var(--gray-soft);
+  }
+  .ftr__legal .mono { font-family: var(--mono); }
+  @media (max-width: 760px) {
+    .ftr__inner { grid-template-columns: 1fr; gap: 1.8rem; }
+    .ftr__cols { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>

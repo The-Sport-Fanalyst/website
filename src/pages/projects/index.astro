@@ -1,0 +1,112 @@
+---
+export const prerender = true;
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+
+const projects = [...await getCollection('projects')].sort(
+  (a, b) => b.data.created_date.valueOf() - a.data.created_date.valueOf()
+);
+const cats = ['Data', 'Research', 'Models', 'Apps'];
+const seasons = ['Summer', 'Winter'];
+const gtypes = ['Olympics', 'Paralympics'];
+---
+<Base title="Projects — The Sport Fanalyst">
+  <section class="head">
+    <div class="wrap">
+      <p class="eyebrow">All projects</p>
+      <h1>The project index</h1>
+      <p class="lead">
+        Every project maps to a GitHub repository and carries a category, a sport, an author,
+        and its data sources. Filter by what you're looking for.
+      </p>
+    </div>
+  </section>
+
+  <section class="wrap section">
+    <div class="filters" role="group" aria-label="Filter projects">
+      <button class="filt is-on" data-filter="all" data-group="category">All</button>
+      {cats.map((c) => <button class="filt" data-filter={c} data-group="category">{c}</button>)}
+      <span class="filt__sep"></span>
+      {seasons.map((s) => <button class="filt filt--g" data-filter={s} data-group="season">{s}</button>)}
+      <span class="filt__sep"></span>
+      {gtypes.map((t) => <button class="filt filt--g" data-filter={t} data-group="type">{t}</button>)}
+    </div>
+
+    <div class="grid" id="grid">
+      {projects.map((p) => (
+        <div class="cell" data-category={p.data.category} data-games={p.data.games.join(',')}>
+          <ProjectCard
+            title={p.data.title} creator={p.data.creator} sport={p.data.sport}
+            category={p.data.category} description={p.data.description} status={p.data.status}
+            github_url={p.data.github_url} demo_url={p.data.demo_url}
+            contributors={p.data.contributors} games={p.data.games}
+            href={`/projects/${p.id}`}
+          />
+        </div>
+      ))}
+    </div>
+    <p class="none" id="none" hidden>No projects match these filters yet — that's an opening. <a href="/submit">Add one →</a></p>
+  </section>
+</Base>
+
+<script>
+  const state: Record<string, string> = { category: 'all', season: 'all', type: 'all' };
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.filt');
+  const cells = document.querySelectorAll<HTMLElement>('.cell');
+  const none = document.getElementById('none')!;
+
+  function apply() {
+    let shown = 0;
+    cells.forEach((c) => {
+      const tags = (c.dataset.games || '').split(',');
+      const ok =
+        (state.category === 'all' || c.dataset.category === state.category) &&
+        (state.season === 'all' || tags.includes(state.season)) &&
+        (state.type === 'all' || tags.includes(state.type));
+      c.hidden = !ok;
+      if (ok) shown++;
+    });
+    none.hidden = shown !== 0;
+  }
+
+  function setFilter(group: string, val: string) {
+    state[group] = state[group] === val ? 'all' : val;
+    document.querySelectorAll(`.filt[data-group="${group}"]`).forEach((b) => {
+      const f = (b as HTMLElement).dataset.filter;
+      b.classList.toggle('is-on', f === state[group] || (state[group] === 'all' && f === 'all'));
+    });
+    apply();
+  }
+
+  buttons.forEach((btn) =>
+    btn.addEventListener('click', () => setFilter(btn.dataset.group!, btn.dataset.filter!))
+  );
+
+  // honor ?category= / ?season= / ?type= from links (e.g. footer "Summer Paralympics")
+  const params = new URLSearchParams(location.search);
+  ['category', 'season', 'type'].forEach((g) => {
+    const v = params.get(g);
+    if (v) setFilter(g, v);
+  });
+</script>
+
+<style>
+  .head { border-bottom: 1px solid var(--line); padding-block: clamp(2.4rem, 5vw, 4rem) 2.4rem; }
+  .head h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); letter-spacing: -.03em; margin: 1rem 0 .8rem; }
+  .lead { max-width: 60ch; color: var(--ink-soft); margin: 0; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: 2rem; }
+  .filt {
+    font-family: var(--mono); font-size: .76rem; text-transform: uppercase; letter-spacing: .04em;
+    padding: .5rem .9rem; border: 1px solid var(--line); background: var(--paper); color: var(--ink-soft); cursor: pointer;
+  }
+  .filt:hover { border-color: var(--ink); }
+  .filt.is-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .filt--g.is-on { background: var(--slate); border-color: var(--slate); }
+  .filt__sep { width: 1px; height: 24px; background: var(--line); margin: 0 .3rem; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.1rem; }
+  .none { margin-top: 2rem; color: var(--gray); }
+  .none a { color: var(--brick); }
+</style>

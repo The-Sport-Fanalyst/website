@@ -1,0 +1,304 @@
+---
+import Base from '../layouts/Base.astro';
+import { CONTENT_REPO, CONTENT_BRANCH } from '../lib/content-repo';
+import { getCollection } from 'astro:content';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/login?next=/submit', 302);
+
+// Prefill the contributor name from their curated profile if it exists,
+// otherwise fall back to their GitHub name/login.
+const contributors = await getCollection('contributors');
+const profile = contributors.find(
+  (c) => c.data.handle.toLowerCase() === user.login.toLowerCase()
+);
+const creatorName = profile?.data.name ?? user.name ?? user.login;
+
+const sports = (await getCollection('sports')).sort((a, b) => a.data.order - b.data.order);
+
+const kinds = [
+  { id: 'data', label: 'Data', blurb: 'Datasets, APIs, athlete databases.' },
+  { id: 'research', label: 'Research', blurb: 'Articles, studies, visual storytelling.' },
+  { id: 'project', label: 'Model', blurb: 'Predictions, ML, notebooks.' },
+  { id: 'app', label: 'App', blurb: 'Dashboards, tools, calculators.' },
+];
+---
+<Base title="Submit a project — The Sport Fanalyst">
+  <section class="head">
+    <div class="wrap">
+      <p class="eyebrow">Contribute · Submission</p>
+      <h1>Submit a project</h1>
+      <p class="lead">
+        Fill this in and we'll format it into the right file and open a pull request
+        on GitHub for you to confirm. A maintainer reviews it there — every analysis
+        shows its sources, methodology, and author.
+      </p>
+    </div>
+  </section>
+
+  <div class="wrap section sgrid">
+    <form class="sform" id="sform" data-creator={creatorName}>
+      <fieldset class="kinds">
+        <legend>What are you submitting?</legend>
+        <div class="kind-row">
+          {kinds.map((k, i) => (
+            <label class="kind">
+              <input type="radio" name="kind" value={k.id} checked={i === 0} />
+              <span class="kind__label">{k.label}</span>
+              <span class="kind__blurb">{k.blurb}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <label class="field">
+        <span class="field__lbl">Title <i>required</i></span>
+        <input type="text" name="title" required maxlength="120" placeholder="LA28 Athletics Medal Predictor" />
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__lbl">Sport <i>required</i></span>
+          <select name="sport" required>
+            <option value="" disabled selected>Choose a sport…</option>
+            {sports.map((s) => <option value={s.data.name}>{s.data.name}</option>)}
+            <option value="Other">Other (note it in the description)</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__lbl">Author</span>
+          <input type="text" name="creator" value={creatorName} readonly />
+          <span class="field__hint">From your profile — edit on GitHub if needed.</span>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field__lbl">Description <i>required</i></span>
+        <textarea name="description" required rows="3" maxlength="400" placeholder="One or two sentences on what it is and why it's useful."></textarea>
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__lbl">Games — season</span>
+          <select name="season">
+            <option value="">—</option>
+            <option value="Summer">Summer</option>
+            <option value="Winter">Winter</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__lbl">Games — type</span>
+          <select name="gtype">
+            <option value="">—</option>
+            <option value="Olympics">Olympics</option>
+            <option value="Paralympics">Paralympics</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__lbl">GitHub repository</span>
+          <input type="url" name="github_url" placeholder="https://github.com/…" />
+        </label>
+        <label class="field" data-when="app">
+          <span class="field__lbl">Demo URL</span>
+          <input type="url" name="demo_url" placeholder="https://…" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field__lbl">Data sources</span>
+        <input type="text" name="data_sources" placeholder="Comma-separated, e.g. World Athletics, Olympic archive" />
+        <span class="field__hint">Citing sources is required for every analysis here.</span>
+      </label>
+
+      <label class="field" data-when="research">
+        <span class="field__lbl">Methodology</span>
+        <textarea name="methodology" rows="2" placeholder="How the result was produced — enough to reproduce."></textarea>
+      </label>
+
+      <label class="field">
+        <span class="field__lbl">Anything else</span>
+        <textarea name="notes" rows="2" placeholder="Optional notes for reviewers."></textarea>
+      </label>
+    </form>
+
+    <aside class="spreview">
+      <div class="panel">
+        <h3>Preview</h3>
+        <p class="panel__sub">This becomes <code id="fname">…</code> in <code>{CONTENT_REPO}</code> on branch <code>{CONTENT_BRANCH}</code>.</p>
+        <pre class="md" id="md"></pre>
+      </div>
+      <a id="prlink" class="btn submit-btn" href="#" target="_blank" rel="noopener">Open pull request on GitHub ↗</a>
+      <p class="copy-fallback" id="copyfb" hidden>
+        This submission is long, so the link may not prefill fully.
+        <button type="button" id="copybtn" class="linkbtn">Copy the Markdown</button> and paste it into a new file in the repo.
+      </p>
+      <p class="panel__note">You'll review and confirm on GitHub — nothing is published until a maintainer merges it.</p>
+    </aside>
+  </div>
+</Base>
+
+<script define:vars={{ CONTENT_REPO, CONTENT_BRANCH }}>
+  const FOLDER = 'projects';
+  const CATEGORY = { project: 'Models', data: 'Data', research: 'Research', app: 'Apps' };
+
+  const form = document.getElementById('sform');
+  const mdEl = document.getElementById('md');
+  const fnameEl = document.getElementById('fname');
+  const prlink = document.getElementById('prlink');
+  const copyfb = document.getElementById('copyfb');
+  const copybtn = document.getElementById('copybtn');
+
+  const slugify = (s) =>
+    (s || '').toLowerCase().replace(/['"]/g, '').replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '').slice(0, 60) || 'submission';
+
+  const jstr = (s) => JSON.stringify(s ?? '');
+  const list = (arr) => (arr.length ? `[${arr.map((i) => JSON.stringify(i)).join(', ')}]` : '[]');
+
+  function readForm() {
+    const f = new FormData(form);
+    const kind = f.get('kind') || 'data';
+    const sources = String(f.get('data_sources') || '')
+      .split(',').map((s) => s.trim()).filter(Boolean);
+    const games = [];
+    if (f.get('season')) games.push(String(f.get('season')));
+    if (f.get('gtype')) games.push(String(f.get('gtype')));
+    return {
+      kind,
+      title: String(f.get('title') || ''),
+      creator: String(f.get('creator') || ''),
+      sport: String(f.get('sport') || ''),
+      description: String(f.get('description') || ''),
+      github_url: String(f.get('github_url') || ''),
+      demo_url: String(f.get('demo_url') || ''),
+      methodology: String(f.get('methodology') || ''),
+      notes: String(f.get('notes') || ''),
+      sources, games,
+    };
+  }
+
+  function buildMarkdown(d) {
+    const today = new Date().toISOString().slice(0, 10);
+    const fm = [
+      '---',
+      `title: ${jstr(d.title)}`,
+      `creator: ${jstr(d.creator)}`,
+      `sport: ${jstr(d.sport)}`,
+      `category: ${CATEGORY[d.kind]}`,
+      `description: ${jstr(d.description)}`,
+      `status: In review`,
+      d.github_url ? `github_url: ${jstr(d.github_url)}` : null,
+      d.demo_url ? `demo_url: ${jstr(d.demo_url)}` : null,
+      `data_sources: ${list(d.sources)}`,
+      `contributors: []`,
+      `created_date: ${today}`,
+      `featured: false`,
+      `games: ${list(d.games)}`,
+      '---', '',
+    ].filter((x) => x !== null);
+
+    const body = ['## Overview', '', d.description || '', ''];
+    if (d.methodology) body.push('## Methodology', '', d.methodology, '');
+    if (d.notes) body.push('## Notes', '', d.notes, '');
+    body.push('## Provenance', '', `- **Author:** ${d.creator}`,
+      `- **Data sources:** ${d.sources.join(', ') || '—'}`, '');
+    return fm.join('\n') + body.join('\n');
+  }
+
+  let lastMarkdown = '';
+
+  function update() {
+    const d = readForm();
+    const filename = `${FOLDER}/${slugify(d.title)}.md`;
+    const md = buildMarkdown(d);
+    lastMarkdown = md;
+
+    fnameEl.textContent = filename;
+    mdEl.textContent = md;
+
+    const params = new URLSearchParams({
+      filename,
+      value: md,
+      message: `Add ${d.kind}: ${d.title || 'untitled'}`,
+      description: `Submitted via The Sport Fanalyst by ${d.creator}.`,
+    });
+    const prUrl = `https://github.com/${CONTENT_REPO}/new/${CONTENT_BRANCH}?${params.toString()}`;
+
+    const valid = d.title && d.sport && d.description;
+    prlink.setAttribute('href', valid ? prUrl : '#');
+    prlink.toggleAttribute('aria-disabled', !valid);
+    prlink.classList.toggle('is-disabled', !valid);
+
+    copyfb.hidden = prUrl.length <= 8000;
+
+    // show/hide kind-specific fields
+    document.querySelectorAll('[data-when]').forEach((el) => {
+      el.style.display = el.getAttribute('data-when') === d.kind ? '' : 'none';
+    });
+  }
+
+  form.addEventListener('input', update);
+  form.addEventListener('change', update);
+  prlink.addEventListener('click', (e) => {
+    if (prlink.classList.contains('is-disabled')) { e.preventDefault(); }
+  });
+  copybtn?.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(lastMarkdown); copybtn.textContent = 'Copied ✓'; }
+    catch { copybtn.textContent = 'Press ⌘/Ctrl+C'; }
+  });
+
+  update();
+</script>
+
+<style>
+  .head { border-bottom: 1px solid var(--line); padding-block: clamp(2.4rem, 5vw, 4rem) 2.4rem; }
+  .head h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); letter-spacing: -.03em; margin: 1rem 0 .8rem; }
+  .lead { max-width: 62ch; color: var(--ink-soft); margin: 0; }
+
+  .sgrid { display: grid; grid-template-columns: 1fr 380px; gap: 2.5rem; align-items: start; }
+  @media (max-width: 880px) { .sgrid { grid-template-columns: 1fr; } }
+
+  .sform { display: flex; flex-direction: column; gap: 1.3rem; }
+  fieldset.kinds { border: 0; padding: 0; margin: 0; }
+  .kinds legend { font-family: var(--mono); font-size: .76rem; text-transform: uppercase; letter-spacing: .08em; color: var(--gray); margin-bottom: .7rem; padding: 0; }
+  .kind-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; }
+  @media (max-width: 560px) { .kind-row { grid-template-columns: repeat(2, 1fr); } }
+  .kind { border: 1px solid var(--line); border-top: 4px solid var(--line); padding: .8rem .9rem; cursor: pointer; display: flex; flex-direction: column; gap: .2rem; transition: border-color .12s; }
+  .kind:hover { border-color: var(--ink); }
+  .kind input { position: absolute; opacity: 0; }
+  .kind:has(input:checked) { border-color: var(--ink); border-top-color: var(--brick); background: var(--paper-dim); }
+  .kind__label { font-family: var(--display); font-weight: 600; }
+  .kind__blurb { font-size: .76rem; color: var(--gray); }
+
+  .field { display: flex; flex-direction: column; gap: .35rem; }
+  .field__lbl { font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
+  .field__lbl i { font-style: normal; color: var(--brick); margin-left: .3rem; font-size: .9em; }
+  .field__hint { font-size: .78rem; color: var(--gray); }
+  .field input, .field select, .field textarea {
+    font-family: var(--serif); font-size: 1rem; padding: .6rem .7rem;
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink); width: 100%;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--brick); outline-offset: 1px; border-color: var(--ink); }
+  .field input[readonly] { background: var(--paper-dim); color: var(--gray); }
+  .field textarea { resize: vertical; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 560px) { .field-row { grid-template-columns: 1fr; } }
+
+  .spreview { position: sticky; top: 90px; display: flex; flex-direction: column; gap: 1rem; }
+  @media (max-width: 880px) { .spreview { position: static; } }
+  .panel { border: 1px solid var(--line); border-top: var(--rail) solid var(--ink); padding: 1.1rem 1.2rem; }
+  .panel h3 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 .4rem; }
+  .panel__sub { font-size: .8rem; color: var(--gray); margin: 0 0 .8rem; }
+  .panel__sub code, .md code { font-family: var(--mono); font-size: .82em; background: var(--paper-dim); padding: .05rem .3rem; }
+  .md { font-family: var(--mono); font-size: .72rem; line-height: 1.5; background: var(--ink); color: var(--paper); padding: .9rem 1rem; overflow: auto; max-height: 360px; white-space: pre-wrap; word-break: break-word; }
+  .submit-btn { justify-content: center; }
+  .submit-btn.is-disabled { opacity: .45; pointer-events: none; }
+  .copy-fallback { font-size: .82rem; color: var(--gray); }
+  .linkbtn { background: none; border: 0; color: var(--brick); text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+  .panel__note { font-size: .8rem; color: var(--gray); margin: 0; }
+</style>
