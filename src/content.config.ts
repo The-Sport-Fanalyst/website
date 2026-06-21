@@ -2,7 +2,7 @@ import { defineCollection, z, reference } from 'astro:content';
 import { glob } from 'astro/loaders';
 
 const sports = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './content/sports' }),
+  loader: glob({ pattern: ['**/*.md', '!**/README.md'], base: './content/sports' }),
   schema: z.object({
     name: z.string(),
     slug: z.string(),
@@ -18,7 +18,7 @@ const sports = defineCollection({
 });
 
 const projects = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './content/projects' }),
+  loader: glob({ pattern: ['**/*.md', '!**/README.md'], base: './content/projects' }),
   schema: z.object({
     title: z.string(),
     creator: z.string(),
@@ -37,7 +37,7 @@ const projects = defineCollection({
 });
 
 const community = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './content/community' }),
+  loader: glob({ pattern: ['**/*.md', '!**/README.md'], base: './content/community' }),
   schema: z.object({
     title: z.string(),
     type: z.enum(['Open Project', 'Research Question', 'Data Request', 'Discussion']),
@@ -52,7 +52,7 @@ const community = defineCollection({
 });
 
 const contributors = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './content/contributors' }),
+  loader: glob({ pattern: ['**/*.md', '!**/README.md'], base: './content/contributors' }),
   schema: z.object({
     name: z.string(),
     handle: z.string(),
