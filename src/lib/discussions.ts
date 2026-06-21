@@ -61,3 +61,94 @@ export function newDiscussionUrl(opts: {
   if (opts.body) params.set('body', opts.body);
   return `${base}/new?${params.toString()}`;
 }
+
+// ── Build-time fetch of real discussions ──────────────────────────────────
+//
+// Reads discussions from GitHub's GraphQL API at build time so the board can
+// list real threads (and link straight to them). Requires a token in the
+// GITHUB_DISCUSSIONS_TOKEN env var (read-only Discussions scope). If the token
+// is absent or GitHub is unreachable, returns [] so the build never fails — the
+// board simply shows its empty state until the next successful build.
+
+export interface DiscussionItem {
+  number: number;
+  title: string;
+  url: string;
+  category: string; // category name as on GitHub
+  author: string | null;
+  avatar: string | null;
+  createdAt: string;
+  comments: number;
+  excerpt: string;
+}
+
+function token(): string | undefined {
+  return env('GITHUB_DISCUSSIONS_TOKEN') || env('GITHUB_TOKEN');
+}
+
+export function discussionsConfigured(): boolean {
+  return Boolean(token());
+}
+
+export async function fetchDiscussions(limit = 50): Promise<DiscussionItem[]> {
+  const t = token();
+  if (!t) return [];
+  const [owner, repo] = DISCUSSIONS_REPO.split('/');
+  if (!owner || !repo) return [];
+
+  const query = `
+    query($owner:String!, $repo:String!, $limit:Int!) {
+      repository(owner:$owner, name:$repo) {
+        discussions(first:$limit, orderBy:{field:UPDATED_AT, direction:DESC}) {
+          nodes {
+            number title url createdAt
+            bodyText
+            comments { totalCount }
+            category { name }
+            author { login avatarUrl }
+          }
+        }
+      }
+    }`;
+
+  try {
+    const res = await fetch('https://api.github.com/graphql', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${t}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'the-sport-fanalyst',
+      },
+      body: JSON.stringify({ query, variables: { owner, repo, limit } }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) {
+      console.warn(`[discussions] GitHub API ${res.status} — board will show empty state.`);
+      return [];
+    }
+    const json: any = await res.json();
+    const nodes = json?.data?.repository?.discussions?.nodes ?? [];
+    return nodes.map((n: any): DiscussionItem => ({
+      number: n.number,
+      title: n.title,
+      url: n.url,
+      category: n.category?.name ?? '',
+      author: n.author?.login ?? null,
+      avatar: n.author?.avatarUrl ?? null,
+      createdAt: n.createdAt,
+      comments: n.comments?.totalCount ?? 0,
+      excerpt: (n.bodyText ?? '').replace(/\s+/g, ' ').slice(0, 160).trim(),
+    }));
+  } catch (err) {
+    console.warn('[discussions] fetch failed — board will show empty state.', err);
+    return [];
+  }
+}
+
+/** Map a GitHub category NAME back to our BoardType (best-effort by slug). */
+export function boardTypeForCategory(categoryName: string): BoardType | null {
+  const slug = categoryName.toLowerCase().replace(/\s+/g, '-');
+  const entry = (Object.entries(DISCUSSION_CATEGORY) as [BoardType, string][])
+    .find(([, s]) => s === slug);
+  return entry ? entry[0] : null;
+}

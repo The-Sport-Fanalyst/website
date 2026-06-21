@@ -1,20 +1,20 @@
 ---
 export const prerender = true;
-import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import {
   categoryUrl,
   newDiscussionUrl,
   allDiscussionsUrl,
   DISCUSSIONS_REPO,
+  DISCUSSION_CATEGORY,
+  fetchDiscussions,
+  discussionsConfigured,
+  boardTypeForCategory,
   type BoardType,
+  type DiscussionItem,
 } from '../../lib/discussions';
 
-const posts = [...await getCollection('community')].sort(
-  (a, b) => b.data.posted_date.valueOf() - a.data.posted_date.valueOf()
-);
 const types = ['Open Project', 'Research Question', 'Data Request', 'Discussion'] as const;
-const byType = (t: string) => posts.filter((p) => p.data.type === t);
 
 const typeMeta: Record<BoardType, { blurb: string; accent: string; cta: string }> = {
   'Open Project': { blurb: 'Projects looking for collaborators.', accent: 'lane', cta: 'Post an open project' },
@@ -22,17 +22,15 @@ const typeMeta: Record<BoardType, { blurb: string; accent: string; cta: string }
   'Data Request': { blurb: 'Datasets the community is hunting for.', accent: 'slate', cta: 'Request data' },
   'Discussion': { blurb: 'General sports-analytics conversation.', accent: 'ink', cta: 'Start a discussion' },
 };
-const fmt = (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-// A curated seed post links to GitHub Discussions, pre-filling a new thread with
-// its title/description so the example can become a real conversation in one click.
-function seedLink(p: any): string {
-  return newDiscussionUrl({
-    type: p.data.type as BoardType,
-    title: p.data.title,
-    body: `${p.data.description}\n\n— seeded from the community board`,
-  });
-}
+// Pull real discussions at build time. Grouped by our board type via category.
+const configured = discussionsConfigured();
+const all = await fetchDiscussions(50);
+const byType = (t: BoardType): DiscussionItem[] =>
+  all.filter((d) => boardTypeForCategory(d.category) === t);
+
+const fmt = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 ---
 <Base title="Community board — The Sport Fanalyst">
   <section class="head">
@@ -41,64 +39,68 @@ function seedLink(p: any): string {
       <h1>Community board</h1>
       <p class="lead">
         Propose a project, ask a research question, request data, or just talk shop.
-        Conversations live in <b>GitHub Discussions</b> — so you get threaded replies,
-        notifications, and your GitHub identity, with no extra account.
+        Conversations live in <b>GitHub Discussions</b> — threaded replies, notifications,
+        and your GitHub identity, with no extra account.
       </p>
       <div class="head__cta">
         <a href={allDiscussionsUrl} class="btn">Open Discussions ↗</a>
         <a href="/contributors" class="btn btn--ghost">Find collaborators</a>
       </div>
+      <p class="refresh">This board lists live discussions and refreshes once daily. New posts appear on GitHub immediately.</p>
     </div>
   </section>
 
   <section class="wrap section">
-    {types.map((t) => (
-      <section class="tsec">
-        <header class={`thead thead--${typeMeta[t].accent}`}>
-          <div class="thead__main">
-            <h2><a href={categoryUrl(t)}>{t}<span class="thead__arrow">↗</span></a></h2>
-            <p>{typeMeta[t].blurb}</p>
-          </div>
-          <a href={newDiscussionUrl({ type: t })} class="thead__new">{typeMeta[t].cta} →</a>
-        </header>
+    {!configured && (
+      <div class="notice">
+        <b>Discussions aren't connected yet.</b>
+        <span>Add a <code>GITHUB_DISCUSSIONS_TOKEN</code> in Netlify and enable Discussions on <a href={allDiscussionsUrl}>{DISCUSSIONS_REPO}</a>. Until then, you can still start threads with the links below.</span>
+      </div>
+    )}
 
-        {byType(t).length > 0 ? (
-          <div class="posts">
-            {byType(t).map((p) => (
-              <a class="post" href={seedLink(p)}>
-                <div class="post__head">
-                  <h3>{p.data.title}</h3>
-                  <span class="post__status" data-status={p.data.status}>{p.data.status}</span>
-                </div>
-                <p class="post__desc">{p.data.description}</p>
-                <div class="post__foot">
-                  <span class="post__meta">
-                    {p.data.sport && <b>{p.data.sport}</b>}
-                    {p.data.sport && ' · '}
-                    {p.data.author} · {fmt(p.data.posted_date)}
-                  </span>
-                  {p.data.skills_needed.length > 0 && (
-                    <span class="post__skills">
-                      {p.data.skills_needed.map((s) => <i class="chip">{s}</i>)}
+    {types.map((t) => {
+      const items = byType(t);
+      return (
+        <section class="tsec">
+          <header class={`thead thead--${typeMeta[t].accent}`}>
+            <div class="thead__main">
+              <h2><a href={categoryUrl(t)}>{t}<span class="thead__arrow">↗</span></a></h2>
+              <p>{typeMeta[t].blurb}</p>
+            </div>
+            <a href={newDiscussionUrl({ type: t })} class="thead__new">{typeMeta[t].cta} →</a>
+          </header>
+
+          {items.length > 0 ? (
+            <div class="posts">
+              {items.map((d) => (
+                <a class="post" href={d.url} target="_blank" rel="noopener">
+                  <div class="post__head">
+                    <h3>{d.title}</h3>
+                    <span class="post__count">{d.comments} {d.comments === 1 ? 'reply' : 'replies'}</span>
+                  </div>
+                  {d.excerpt && <p class="post__desc">{d.excerpt}{d.excerpt.length >= 160 ? '…' : ''}</p>}
+                  <div class="post__foot">
+                    <span class="post__meta">
+                      {d.avatar && <img class="post__av" src={d.avatar} alt="" width="18" height="18" />}
+                      {d.author ?? 'someone'} · {fmt(d.createdAt)}
                     </span>
-                  )}
-                </div>
-                <span class="post__open">Open in Discussions ↗</span>
-              </a>
-            ))}
-          </div>
-        ) : (
-          <div class="empty">
-            <p>No {t.toLowerCase()}s yet — be the first.</p>
-            <a href={newDiscussionUrl({ type: t })} class="btn btn--ghost">{typeMeta[t].cta} →</a>
-          </div>
-        )}
-      </section>
-    ))}
+                    <span class="post__open">Open in Discussions ↗</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div class="empty">
+              <p>{configured ? `No ${t.toLowerCase()}s yet — be the first.` : 'Connect Discussions to list threads here.'}</p>
+              <a href={newDiscussionUrl({ type: t })} class="btn btn--ghost">{typeMeta[t].cta} →</a>
+            </div>
+          )}
+        </section>
+      );
+    })}
 
     <p class="repo-note">
-      Discussions are hosted on <a href={allDiscussionsUrl}>{DISCUSSIONS_REPO}</a>.
-      Seeded examples above open a pre-filled thread you can post in one click.
+      Discussions are hosted on <a href={allDiscussionsUrl}>{DISCUSSIONS_REPO}</a>. Board listings refresh daily.
     </p>
   </section>
 </Base>
@@ -109,6 +111,13 @@ function seedLink(p: any): string {
   .lead { max-width: 62ch; color: var(--ink-soft); margin: 0 0 1.4rem; }
   .lead b { font-weight: 600; }
   .head__cta { display: flex; gap: .7rem; flex-wrap: wrap; }
+  .refresh { margin: 1.2rem 0 0; font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--gray-soft); }
+
+  .notice { border: 1px solid var(--line); border-left: var(--rail) solid var(--brick); padding: 1rem 1.2rem; margin-bottom: 2rem; display: flex; flex-direction: column; gap: .3rem; }
+  .notice b { font-family: var(--display); }
+  .notice span { color: var(--ink-soft); font-size: .92rem; }
+  .notice code { font-family: var(--mono); font-size: .85em; background: var(--paper-dim); padding: .05rem .3rem; }
+  .notice a { color: var(--brick); }
 
   .tsec { margin-bottom: 3.4rem; }
   .thead { border-left: var(--rail) solid var(--ink); padding-left: 1rem; margin-bottom: 1.4rem;
@@ -126,21 +135,17 @@ function seedLink(p: any): string {
   .thead__new:hover { border-bottom: 1px solid var(--brick); }
 
   .posts { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
-  .post { background: var(--paper); padding: 1.3rem 1.4rem; transition: background .15s; text-decoration: none; color: var(--ink); display: block; position: relative; }
+  .post { background: var(--paper); padding: 1.3rem 1.4rem; transition: background .15s; text-decoration: none; color: var(--ink); display: block; }
   .post:hover { background: var(--paper-dim); }
   .post__head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
   .post__head h3 { font-size: 1.18rem; font-weight: 600; margin: 0; letter-spacing: -.01em; }
   .post:hover .post__head h3 { color: var(--brick); }
-  .post__status { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; color: var(--gray); white-space: nowrap; }
-  .post__status[data-status="Open"] { color: var(--brick); }
-  .post__status[data-status="Open"]::before { content: '● '; }
+  .post__count { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; color: var(--gray); white-space: nowrap; }
   .post__desc { color: var(--ink-soft); font-size: .96rem; margin: .6rem 0 1rem; max-width: 75ch; }
   .post__foot { display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
-  .post__meta { font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--gray); }
-  .post__meta b { color: var(--ink); }
-  .post__skills { display: flex; gap: .4rem; flex-wrap: wrap; }
-  .post__open { position: absolute; top: 1.3rem; right: 1.4rem; font-family: var(--mono); font-size: .68rem;
-    text-transform: uppercase; color: var(--slate); opacity: 0; transition: opacity .15s; }
+  .post__meta { font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--gray); display: inline-flex; align-items: center; gap: .45rem; }
+  .post__av { border-radius: 50%; }
+  .post__open { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; color: var(--slate); opacity: 0; transition: opacity .15s; }
   .post:hover .post__open { opacity: 1; }
   @media (max-width: 560px) { .post__open { display: none; } }
 
