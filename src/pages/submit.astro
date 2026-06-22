@@ -81,17 +81,17 @@ const kinds = [
 
       <div class="field-row">
         <label class="field">
-          <span class="field__lbl">Games — season</span>
-          <select name="season">
-            <option value="">—</option>
+          <span class="field__lbl">Sport — Season <i>required</i></span>
+          <select name="season" required>
+            <option value="" disabled selected>Choose…</option>
             <option value="Summer">Summer</option>
             <option value="Winter">Winter</option>
           </select>
         </label>
         <label class="field">
-          <span class="field__lbl">Games — type</span>
-          <select name="gtype">
-            <option value="">—</option>
+          <span class="field__lbl">Sport — Type <i>required</i></span>
+          <select name="gtype" required>
+            <option value="" disabled selected>Choose…</option>
             <option value="Olympic">Olympic</option>
             <option value="Paralympic">Paralympic</option>
           </select>
@@ -109,11 +109,18 @@ const kinds = [
         </label>
       </div>
 
-      <label class="field">
-        <span class="field__lbl">Data sources</span>
-        <input type="text" name="data_sources" placeholder="Comma-separated, e.g. World Athletics, Olympic archive" />
-        <span class="field__hint">Citing sources is required for every analysis here.</span>
-      </label>
+      <div class="field">
+        <span class="field__lbl">Data sources <i>required</i></span>
+        <span class="field__hint">Citing sources is required. Add a name and (optionally) a link for each.</span>
+        <div id="sources-list" class="sources">
+          <div class="source-row">
+            <input type="text" class="src-name" placeholder="Source name, e.g. World Athletics" />
+            <input type="url" class="src-url" placeholder="https://… (optional)" />
+            <button type="button" class="src-remove" aria-label="Remove source">×</button>
+          </div>
+        </div>
+        <button type="button" id="add-source" class="src-add">+ Add another source</button>
+      </div>
 
       <label class="field" data-when="research">
         <span class="field__lbl">Methodology</span>
@@ -159,12 +166,24 @@ const kinds = [
 
   const jstr = (s) => JSON.stringify(s ?? '');
   const list = (arr) => (arr.length ? `[${arr.map((i) => JSON.stringify(i)).join(', ')}]` : '[]');
+  const sourcesYaml = (arr) => {
+    if (!arr.length) return '[]';
+    return '\n' + arr.map((s) =>
+      s.url
+        ? `  - name: ${jstr(s.name)}\n    url: ${jstr(s.url)}`
+        : `  - name: ${jstr(s.name)}`
+    ).join('\n');
+  };
 
   function readForm() {
     const f = new FormData(form);
     const kind = f.get('kind') || 'data';
-    const sources = String(f.get('data_sources') || '')
-      .split(',').map((s) => s.trim()).filter(Boolean);
+    const sources = Array.from(document.querySelectorAll('#sources-list .source-row'))
+      .map((row) => ({
+        name: row.querySelector('.src-name').value.trim(),
+        url: row.querySelector('.src-url').value.trim(),
+      }))
+      .filter((s) => s.name);
     const games = [];
     if (f.get('season')) games.push(String(f.get('season')));
     if (f.get('gtype')) games.push(String(f.get('gtype')));
@@ -194,7 +213,7 @@ const kinds = [
       `status: In review`,
       d.github_url ? `github_url: ${jstr(d.github_url)}` : null,
       d.demo_url ? `demo_url: ${jstr(d.demo_url)}` : null,
-      `data_sources: ${list(d.sources)}`,
+      `data_sources: ${sourcesYaml(d.sources)}`,
       `contributors: []`,
       `created_date: ${today}`,
       `featured: false`,
@@ -206,7 +225,7 @@ const kinds = [
     if (d.methodology) body.push('## Methodology', '', d.methodology, '');
     if (d.notes) body.push('## Notes', '', d.notes, '');
     body.push('## Provenance', '', `- **Author:** ${d.creator}`,
-      `- **Data sources:** ${d.sources.join(', ') || '—'}`, '');
+      `- **Data sources:** ${d.sources.map((s) => s.name).join(', ') || '—'}`, '');
     return fm.join('\n') + body.join('\n');
   }
 
@@ -229,7 +248,7 @@ const kinds = [
     });
     const prUrl = `https://github.com/${CONTENT_REPO}/new/${CONTENT_BRANCH}?${params.toString()}`;
 
-    const valid = d.title && d.sport && d.description;
+    const valid = d.title && d.sport && d.description && d.season && d.gtype && d.sources.length > 0;
     prlink.setAttribute('href', valid ? prUrl : '#');
     prlink.toggleAttribute('aria-disabled', !valid);
     prlink.classList.toggle('is-disabled', !valid);
@@ -244,6 +263,30 @@ const kinds = [
 
   form.addEventListener('input', update);
   form.addEventListener('change', update);
+
+  // Add / remove data source rows
+  const sourcesList = document.getElementById('sources-list');
+  document.getElementById('add-source')?.addEventListener('click', () => {
+    const row = document.createElement('div');
+    row.className = 'source-row';
+    row.innerHTML =
+      '<input type="text" class="src-name" placeholder="Source name" />' +
+      '<input type="url" class="src-url" placeholder="https://… (optional)" />' +
+      '<button type="button" class="src-remove" aria-label="Remove source">×</button>';
+    sourcesList.appendChild(row);
+    update();
+  });
+  sourcesList?.addEventListener('click', (e) => {
+    if (e.target.classList.contains('src-remove')) {
+      const rows = sourcesList.querySelectorAll('.source-row');
+      if (rows.length > 1) e.target.closest('.source-row').remove();
+      else {
+        // don't remove the last row; just clear it
+        e.target.closest('.source-row').querySelectorAll('input').forEach((i) => (i.value = ''));
+      }
+      update();
+    }
+  });
   prlink.addEventListener('click', (e) => {
     if (prlink.classList.contains('is-disabled')) { e.preventDefault(); }
   });
@@ -279,6 +322,15 @@ const kinds = [
   .field__lbl { font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
   .field__lbl i { font-style: normal; color: var(--brick); margin-left: .3rem; font-size: .9em; }
   .field__hint { font-size: .78rem; color: var(--gray); }
+  .sources { display: flex; flex-direction: column; gap: .5rem; margin-top: .2rem; }
+  .source-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: .5rem; align-items: center; }
+  .source-row input { font-family: var(--serif); font-size: .95rem; padding: .55rem .65rem; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+  .source-row input:focus { outline: 2px solid var(--brick); outline-offset: 1px; border-color: var(--ink); }
+  .src-remove { border: 1px solid var(--line); background: var(--paper); color: var(--gray); width: 2.1rem; height: 2.1rem; cursor: pointer; font-size: 1.1rem; line-height: 1; }
+  .src-remove:hover { border-color: var(--brick); color: var(--brick); }
+  .src-add { align-self: flex-start; margin-top: .6rem; background: none; border: 1px dashed var(--line); color: var(--ink); font-family: var(--mono); font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; padding: .5rem .8rem; cursor: pointer; }
+  .src-add:hover { border-color: var(--brick); color: var(--brick); }
+  @media (max-width: 560px) { .source-row { grid-template-columns: 1fr auto; } .source-row .src-url { grid-column: 1 / 3; } }
   .field input, .field select, .field textarea {
     font-family: var(--serif); font-size: 1rem; padding: .6rem .7rem;
     border: 1px solid var(--line); background: var(--paper); color: var(--ink); width: 100%;

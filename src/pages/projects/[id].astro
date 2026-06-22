@@ -82,7 +82,11 @@ const fmt = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', 
         <div class="trust">
           <h3>Data sources</h3>
           {d.data_sources.length > 0
-            ? <ul class="srcs">{d.data_sources.map((s) => <li>{s}</li>)}</ul>
+            ? <ul class="srcs">{d.data_sources.map((s) => {
+                const name = typeof s === 'string' ? s : s.name;
+                const url = typeof s === 'string' ? undefined : s.url;
+                return <li>{url ? <a href={url} target="_blank" rel="noopener">{name} ↗</a> : name}</li>;
+              })}</ul>
             : <p class="muted">No external data sources listed.</p>}
         </div>
 
@@ -152,6 +156,8 @@ const fmt = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', 
   .trust dd a { color: var(--brick); text-decoration: none; }
   .srcs { list-style: none; padding: 0; margin: 0; }
   .srcs li { font-size: .88rem; padding: .45rem 0; border-bottom: 1px dashed var(--line); color: var(--ink-soft); }
+  .srcs a { color: var(--brick); text-decoration: none; }
+  .srcs a:hover { text-decoration: underline; }
   .muted { color: var(--gray-soft); font-size: .9rem; margin: 0; }
   .team { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; }
   .team__p { display: flex; align-items: center; gap: .6rem; text-decoration: none; color: var(--ink); font-size: .92rem; }

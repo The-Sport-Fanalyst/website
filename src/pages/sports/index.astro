@@ -50,7 +50,7 @@ const paralympicCount = sports.filter((s) => s.data.paralympic).length;
             <span class="row__side">
               <span class="row__games">
                 {s.data.olympic && <i class="chip chip--olympic">Olympic</i>}
-                {s.data.paralympic && <i class="chip chip--paralympic">Para</i>}
+                {s.data.paralympic && <i class="chip chip--paralympic">Paralympic</i>}
               </span>
               <span class="row__count">{countFor(s.data.name)} {countFor(s.data.name) === 1 ? 'project' : 'projects'}</span>
             </span>
@@ -78,7 +78,7 @@ const paralympicCount = sports.filter((s) => s.data.paralympic).length;
             <span class="tile__name">{s.data.name}</span>
             <span class="tile__games">
               {s.data.olympic && <i class="chip chip--olympic">Olympic</i>}
-              {s.data.paralympic && <i class="chip chip--paralympic">Para</i>}
+              {s.data.paralympic && <i class="chip chip--paralympic">Paralympic</i>}
             </span>
             <span class="tile__cta">Be the first →</span>
           </a>
