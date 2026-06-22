@@ -32,6 +32,17 @@ const roleBlurb: Record<string, string> = {
   </section>
 
   <section class="wrap section">
+    {contributors.length === 0 && (
+      <div class="empty">
+        <p class="eyebrow">No contributors yet</p>
+        <h2>This is where the community will be.</h2>
+        <p>Contributors appear here as people sign in and make their first approved contribution. Be one of the first.</p>
+        <div class="empty__cta">
+          <a href="/submit" class="btn">Submit a project →</a>
+          <a href="/contribute" class="btn btn--ghost">How it works</a>
+        </div>
+      </div>
+    )}
     {roleOrder.map((role) => {
       const people = sorted.filter((c) => c.data.role === role);
       if (people.length === 0) return null;
@@ -64,6 +75,10 @@ const roleBlurb: Record<string, string> = {
 <style>
   .head { border-bottom: 1px solid var(--line); padding-block: clamp(2.4rem, 5vw, 4rem) 2.4rem; }
   .head h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); letter-spacing: -.03em; margin: 1rem 0 .8rem; }
+  .empty { border: 1px dashed var(--line); border-left: var(--rail) solid var(--lane); padding: 2rem; max-width: 60ch; }
+  .empty h2 { font-size: 1.6rem; margin: .4rem 0 .6rem; letter-spacing: -.02em; }
+  .empty p { color: var(--ink-soft); margin: 0 0 1rem; }
+  .empty__cta { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1.2rem; }
   .lead { max-width: 60ch; color: var(--ink-soft); margin: 0; }
 
   .rsec { margin-bottom: 3rem; }

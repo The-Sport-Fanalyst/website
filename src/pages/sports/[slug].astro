@@ -30,7 +30,7 @@ const featured = sportProjects.filter((p) => p.data.featured);
 ---
 <Base title={`${sport.data.name} — The Sport Fanalyst`} description={sport.data.description}>
   <section class="shead">
-    <div class="wrap shead__inner">
+    <div class:list={['wrap shead__inner', { 'shead__inner--full': sport.data.disciplines.length === 0 }]}>
       <div class="shead__main">
         <p class="eyebrow"><a href="/sports" class="crumb">Sports</a> / {sport.data.name}</p>
         <h1><span class="shead__icon">{sport.data.icon}</span>{sport.data.name}</h1>
@@ -41,10 +41,12 @@ const featured = sportProjects.filter((p) => p.data.featured);
           {sport.data.la28Venue && <span class="chip">LA28 · {sport.data.la28Venue}</span>}
         </div>
       </div>
-      <aside class="shead__facts">
-        <h4>Disciplines</h4>
-        <ul>{sport.data.disciplines.map((d) => <li>{d}</li>)}</ul>
-      </aside>
+      {sport.data.disciplines.length > 0 && (
+        <aside class="shead__facts">
+          <h4>Disciplines</h4>
+          <ul>{sport.data.disciplines.map((d) => <li>{d}</li>)}</ul>
+        </aside>
+      )}
     </div>
   </section>
 
@@ -124,6 +126,7 @@ const featured = sportProjects.filter((p) => p.data.featured);
 <style>
   .shead { border-bottom: 1px solid var(--line); background: var(--paper-dim); }
   .shead__inner { display: grid; grid-template-columns: 1fr 260px; gap: 2.5rem; padding-block: clamp(2.2rem, 5vw, 3.6rem); }
+  .shead__inner--full { grid-template-columns: 1fr; }
   .crumb { color: var(--gray); text-decoration: none; }
   .crumb:hover { color: var(--brick); }
   .shead h1 { font-size: clamp(2.4rem, 6vw, 4rem); letter-spacing: -.03em; margin: .8rem 0; display: flex; align-items: center; gap: .8rem; }

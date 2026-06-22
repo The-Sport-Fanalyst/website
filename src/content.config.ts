@@ -32,7 +32,7 @@ const projects = defineCollection({
     contributors: z.array(z.string()).default([]),
     created_date: z.coerce.date(),
     featured: z.boolean().default(false),
-    games: z.array(z.enum(['Summer', 'Winter', 'Olympics', 'Paralympics'])).default([]),
+    games: z.array(z.enum(['Summer', 'Winter', 'Olympic', 'Paralympic'])).default([]),
   }),
 });
 

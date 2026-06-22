@@ -70,27 +70,36 @@ const catBlurb: Record<string, string> = {
 
   <section class="section wrap">
     <header class="band">
-      <h2>Featured projects</h2>
+      <h2>{featured.length > 0 ? 'Featured projects' : 'Projects'}</h2>
       <a href="/projects" class="band__link">All projects →</a>
     </header>
-    <p class="band__lead">The community's strongest work — open code, cited data, named authors.</p>
-    <div class="grid">
-      {featured.map((p) => (
-        <ProjectCard
-          title={p.data.title}
-          creator={p.data.creator}
-          sport={p.data.sport}
-          category={p.data.category}
-          description={p.data.description}
-          status={p.data.status}
-          github_url={p.data.github_url}
-          demo_url={p.data.demo_url}
-          contributors={p.data.contributors}
-          games={p.data.games}
-          href={`/projects/${p.id}`}
-        />
-      ))}
-    </div>
+    {featured.length > 0 ? (
+      <>
+        <p class="band__lead">The community's strongest work — open code, cited data, named authors.</p>
+        <div class="grid">
+          {featured.map((p) => (
+            <ProjectCard
+              title={p.data.title}
+              creator={p.data.creator}
+              sport={p.data.sport}
+              category={p.data.category}
+              description={p.data.description}
+              status={p.data.status}
+              github_url={p.data.github_url}
+              demo_url={p.data.demo_url}
+              contributors={p.data.contributors}
+              games={p.data.games}
+              href={`/projects/${p.id}`}
+            />
+          ))}
+        </div>
+      </>
+    ) : (
+      <div class="home-empty">
+        <p>No projects yet — this is a brand-new, open platform. The first contributions will be featured right here.</p>
+        <a href="/submit" class="btn">Start the first project →</a>
+      </div>
+    )}
   </section>
 
   <section class="sports-strip">
@@ -100,7 +109,7 @@ const catBlurb: Record<string, string> = {
         <a href="/sports" class="band__link">Directory →</a>
       </header>
       <div class="strip">
-        {sports.map((s) => (
+        {sports.slice(0, 8).map((s) => (
           <a href={`/sports/${s.data.slug}`} class="strip__card">
             <span class="strip__icon">{s.data.icon}</span>
             <span class="strip__name">{s.data.name}</span>
@@ -111,9 +120,11 @@ const catBlurb: Record<string, string> = {
           </a>
         ))}
       </div>
+      <p class="strip__more"><a href="/sports">See all {sports.length} sports →</a></p>
     </div>
   </section>
 
+  {latest.length > 0 && (
   <section class="section wrap">
     <header class="band">
       <h2>Latest contributions</h2>
@@ -136,6 +147,7 @@ const catBlurb: Record<string, string> = {
       ))}
     </ol>
   </section>
+  )}
 
   <section class="join">
     <div class="wrap join__inner">
@@ -201,6 +213,11 @@ const catBlurb: Record<string, string> = {
   .band__lead { color: var(--gray); margin: .8rem 0 1.6rem; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.1rem; }
+  .home-empty { border: 1px dashed var(--line); border-left: var(--rail) solid var(--lane); padding: 2rem; display: flex; flex-direction: column; align-items: flex-start; gap: 1.2rem; }
+  .home-empty p { margin: 0; color: var(--ink-soft); max-width: 60ch; font-size: 1.05rem; }
+  .strip__more { margin: 1.2rem 0 0; }
+  .strip__more a { font-family: var(--mono); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--lane); text-decoration: none; }
+  .strip__more a:hover { text-decoration: underline; }
 
   .sports-strip { background: var(--ink); color: var(--paper); padding-block: clamp(3rem, 6vw, 5rem); }
   .band--invert { border-color: var(--lane); }

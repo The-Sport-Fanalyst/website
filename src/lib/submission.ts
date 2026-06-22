@@ -22,7 +22,7 @@ export interface SubmissionInput {
   demo_url?: string;
   data_sources?: string[];
   season?: 'Summer' | 'Winter';
-  gtype?: 'Olympics' | 'Paralympics';
+  gtype?: 'Olympic' | 'Paralympic';
   // research / app extras captured into the body
   methodology?: string;
   notes?: string;
