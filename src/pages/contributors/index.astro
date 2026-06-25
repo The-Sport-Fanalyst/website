@@ -2,21 +2,45 @@
 export const prerender = true;
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
+import { roleForLogin, type Role } from '../../lib/roles';
 
-const contributors = await getCollection('contributors');
 const projects = await getCollection('projects');
-const roleOrder = ['Admin', 'Maintainer', 'Contributor', 'Member'];
-const sorted = [...contributors].sort(
-  (a, b) => roleOrder.indexOf(a.data.role) - roleOrder.indexOf(b.data.role)
-);
-const projCount = (name: string) =>
-  projects.filter((p) => p.data.creator === name || p.data.contributors.includes(name)).length;
 
-const roleBlurb: Record<string, string> = {
+// Derive contributors from project authorship: anyone who is the creator of, or
+// a listed contributor on, at least one project. No separate profile files —
+// contributing a project is what makes you a contributor. Remove your last
+// project and you drop off this list automatically.
+type Person = { name: string; projects: typeof projects; role: Role };
+const byName = new Map<string, Person>();
+
+for (const p of projects) {
+  const names = [p.data.creator, ...p.data.contributors].filter(Boolean);
+  for (const name of names) {
+    if (!byName.has(name)) {
+      // role looked up by treating the stored name as a GitHub login (creators
+      // are saved as the login); falls back to Contributor since they've shipped.
+      const looked = roleForLogin(name);
+      const role: Role = looked === 'Member' ? 'Contributor' : looked;
+      byName.set(name, { name, projects: [], role });
+    }
+    byName.get(name)!.projects.push(p);
+  }
+}
+
+const roleOrder: Role[] = ['Admin', 'Maintainer', 'Contributor'];
+const people = [...byName.values()].sort((a, b) => {
+  const r = roleOrder.indexOf(a.role) - roleOrder.indexOf(b.role);
+  return r !== 0 ? r : b.projects.length - a.projects.length;
+});
+
+const initials = (name: string) =>
+  name.replace(/[^a-zA-Z0-9 ]/g, '').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase() || name.slice(0, 2).toUpperCase();
+
+const roleBlurb: Record<Role, string> = {
   Admin: 'Founder. Full control of the platform.',
   Maintainer: 'Trusted members who review submissions and steward sport sections.',
-  Contributor: 'Approved members who submit projects and create content.',
-  Member: 'Joined the community — commenting, joining projects, proposing ideas.',
+  Contributor: 'Members who have shipped at least one project.',
+  Member: 'Joined the community.',
 };
 ---
 <Base title="Contributors — The Sport Fanalyst">
@@ -25,50 +49,54 @@ const roleBlurb: Record<string, string> = {
       <p class="eyebrow">People</p>
       <h1>Contributors</h1>
       <p class="lead">
-        The community behind the analysis. Roles describe what someone can do — and everyone
-        starts as a member. Earn contributor status with your first approved submission.
+        The community behind the analysis. Everyone here has shipped at least one project —
+        contribute a project and you'll appear automatically.
       </p>
     </div>
   </section>
 
   <section class="wrap section">
-    {contributors.length === 0 && (
+    {people.length === 0 ? (
       <div class="empty">
         <p class="eyebrow">No contributors yet</p>
         <h2>This is where the community will be.</h2>
-        <p>Contributors appear here as people sign in and make their first approved contribution. Be one of the first.</p>
+        <p>The moment someone's first project is merged, they show up here. Be the first.</p>
         <div class="empty__cta">
           <a href="/submit" class="btn">Submit a project →</a>
           <a href="/contribute" class="btn btn--ghost">How it works</a>
         </div>
       </div>
+    ) : (
+      roleOrder.map((role) => {
+        const group = people.filter((c) => c.role === role);
+        if (group.length === 0) return null;
+        return (
+          <section class="rsec">
+            <header class="rhead">
+              <h2>{role}<i>{group.length}</i></h2>
+              <p>{roleBlurb[role]}</p>
+            </header>
+            <div class="cards">
+              {group.map((c) => (
+                <div class="pc">
+                  <span class="pc__av">{initials(c.name)}</span>
+                  <span class="pc__name">{c.name}</span>
+                  <span class="pc__handle">@{c.name}</span>
+                  <span class="pc__projects">
+                    {c.projects.slice(0, 3).map((p) => (
+                      <a href={`/projects/${p.id}`} class="pc__proj">{p.data.title}</a>
+                    ))}
+                  </span>
+                  <span class="pc__foot">
+                    <span class="pc__count">{c.projects.length} {c.projects.length === 1 ? 'project' : 'projects'}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })
     )}
-    {roleOrder.map((role) => {
-      const people = sorted.filter((c) => c.data.role === role);
-      if (people.length === 0) return null;
-      return (
-        <section class="rsec">
-          <header class="rhead">
-            <h2>{role}<i>{people.length}</i></h2>
-            <p>{roleBlurb[role]}</p>
-          </header>
-          <div class="cards">
-            {people.map((c) => (
-              <a href={`/contributors/${c.id}`} class="pc">
-                <span class="pc__av">{c.data.avatar_initials}</span>
-                <span class="pc__name">{c.data.name}</span>
-                <span class="pc__handle">@{c.data.handle}</span>
-                <span class="pc__bio">{c.data.bio}</span>
-                <span class="pc__foot">
-                  <span class="pc__focus">{c.data.focus.slice(0, 2).map((f) => <i class="chip">{f}</i>)}</span>
-                  <span class="pc__count">{projCount(c.data.name)} projects</span>
-                </span>
-              </a>
-            ))}
-          </div>
-        </section>
-      );
-    })}
   </section>
 </Base>
 
@@ -88,16 +116,13 @@ const roleBlurb: Record<string, string> = {
   .rhead p { margin: .3rem 0 0; color: var(--gray); font-size: .92rem; }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.1rem; }
-  .pc {
-    display: flex; flex-direction: column; gap: .5rem; text-decoration: none; color: var(--ink);
-    border: 1px solid var(--line); border-top: var(--rail) solid var(--ink); padding: 1.4rem; transition: transform .15s, border-top-color .15s;
-  }
-  .pc:hover { transform: translateY(-3px); border-top-color: var(--lane); }
-  .pc__av { width: 48px; height: 48px; display: grid; place-items: center; background: var(--ink); color: var(--lane); font-family: var(--mono); font-weight: 500; }
+  .pc { border: 1px solid var(--line); border-top: var(--rail) solid var(--ink); padding: 1.3rem; display: flex; flex-direction: column; gap: .5rem; }
+  .pc__av { width: 2.6rem; height: 2.6rem; display: flex; align-items: center; justify-content: center; background: var(--ink); color: var(--lane); font-family: var(--display); font-weight: 600; }
   .pc__name { font-family: var(--display); font-weight: 600; font-size: 1.15rem; }
-  .pc__handle { font-family: var(--mono); font-size: .74rem; color: var(--gray); margin-top: -.4rem; }
-  .pc__bio { font-size: .9rem; color: var(--ink-soft); flex: 1; }
-  .pc__foot { display: flex; justify-content: space-between; align-items: center; gap: .5rem; border-top: 1px solid var(--line); padding-top: .7rem; }
-  .pc__focus { display: flex; gap: .35rem; flex-wrap: wrap; }
-  .pc__count { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; color: var(--gray); white-space: nowrap; }
+  .pc__handle { font-family: var(--mono); font-size: .78rem; color: var(--gray); }
+  .pc__projects { display: flex; flex-direction: column; gap: .25rem; margin: .4rem 0; }
+  .pc__proj { font-size: .88rem; color: var(--brick); text-decoration: none; }
+  .pc__proj:hover { text-decoration: underline; }
+  .pc__foot { margin-top: auto; padding-top: .6rem; border-top: 1px dashed var(--line); }
+  .pc__count { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--gray); }
 </style>

@@ -22,13 +22,10 @@ export const ROLE_RANK: Record<Role, number> = {
 
 /** GitHub login (lowercased) -> role. Edit this to promote people. */
 const ROLE_BY_LOGIN: Record<string, Role> = {
-  // Founder — seeded as Admin. Replace with the real GitHub login.
-  mokonkwo: 'Admin',
-  // Example maintainers / contributors (replace or remove):
-  dreyes: 'Maintainer',
-  lfischer: 'Maintainer',
-  pnair: 'Contributor',
-  tvidal: 'Contributor',
+  // Founder — full control of the platform.
+  selinalytics: 'Admin',
+  // Add maintainers/contributors here by GitHub login, e.g.:
+  //   somemaintainer: 'Maintainer',
 };
 
 /** Everyone who signs in and isn't listed above gets this. */

@@ -11,12 +11,20 @@ const featured = allProjects.filter((p) => p.data.featured);
 const latest = [...allProjects].sort(
   (a, b) => b.data.created_date.valueOf() - a.data.created_date.valueOf()
 ).slice(0, 4);
+// Homepage showcase: featured projects if any, else the most recent ones.
+const showcase = featured.length > 0 ? featured : latest;
+
+// Contributors are derived from project authorship (unique creators + listed contributors).
+const contributorNames = new Set<string>();
+for (const p of allProjects) {
+  [p.data.creator, ...p.data.contributors].filter(Boolean).forEach((n) => contributorNames.add(n));
+}
 
 const stats = {
   sports: sports.length,
   projects: allProjects.length,
-  contributors: (await getCollection('contributors')).length,
-  open: (await getCollection('community')).filter((c) => c.data.status === 'Open').length,
+  contributors: contributorNames.size,
+  open: 0,
 };
 
 const catList = ['Data', 'Research', 'Models', 'Apps'] as const;
@@ -70,14 +78,14 @@ const catBlurb: Record<string, string> = {
 
   <section class="section wrap">
     <header class="band">
-      <h2>{featured.length > 0 ? 'Featured projects' : 'Projects'}</h2>
+      <h2>{featured.length > 0 ? 'Featured projects' : (showcase.length > 0 ? 'Latest projects' : 'Projects')}</h2>
       <a href="/projects" class="band__link">All projects →</a>
     </header>
-    {featured.length > 0 ? (
+    {showcase.length > 0 ? (
       <>
-        <p class="band__lead">The community's strongest work — open code, cited data, named authors.</p>
+        <p class="band__lead">{featured.length > 0 ? "The community's strongest work — open code, cited data, named authors." : 'Fresh contributions from the community.'}</p>
         <div class="grid">
-          {featured.map((p) => (
+          {showcase.map((p) => (
             <ProjectCard
               title={p.data.title}
               creator={p.data.creator}
@@ -96,7 +104,7 @@ const catBlurb: Record<string, string> = {
       </>
     ) : (
       <div class="home-empty">
-        <p>No projects yet — this is a brand-new, open platform. The first contributions will be featured right here.</p>
+        <p>No projects yet — this is a brand-new, open platform. The first contributions will show up right here.</p>
         <a href="/submit" class="btn">Start the first project →</a>
       </div>
     )}
