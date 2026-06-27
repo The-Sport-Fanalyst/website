@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
 import Base from '../../layouts/Base.astro';
+import HeadConfetti from '../../components/HeadConfetti.astro';
 import {
   categoryUrl,
   newDiscussionUrl,
@@ -19,7 +20,7 @@ const types = ['Open Project', 'Research Question', 'Data Request', 'Discussion'
 const typeMeta: Record<BoardType, { blurb: string; accent: string; cta: string }> = {
   'Open Project': { blurb: 'Projects looking for collaborators.', accent: 'lane', cta: 'Post an open project' },
   'Research Question': { blurb: 'Open questions worth investigating.', accent: 'brick', cta: 'Ask a research question' },
-  'Data Request': { blurb: 'Datasets the community is hunting for.', accent: 'slate', cta: 'Request data' },
+  'Data Request': { blurb: 'Looking for data or a way to scrape data. Ask the community for help.', accent: 'slate', cta: 'Request data' },
   'Discussion': { blurb: 'General sports-analytics conversation.', accent: 'ink', cta: 'Start a discussion' },
 };
 
@@ -34,7 +35,9 @@ const fmt = (iso: string) =>
 ---
 <Base title="Community board — The Sport Fanalyst">
   <section class="head">
-    <div class="wrap">
+    
+    <HeadConfetti />
+<div class="wrap">
       <p class="eyebrow">Collaboration · Powered by GitHub Discussions</p>
       <h1>Community board</h1>
       <p class="lead">

@@ -2,10 +2,9 @@
 const year = new Date().getFullYear();
 ---
 <footer class="ftr">
-  <div class="lane-rail"></div>
   <div class="wrap ftr__inner">
     <div class="ftr__brand">
-      <span class="ftr__name">The Sport <b>Fan</b>alyst</span>
+      <img class="ftr__logo" src="/brand/Full_Logo_Chrome.svg" alt="The Sport Fanalyst" width="220" height="110" />
       <p class="ftr__tag">Open Olympic &amp; Paralympic analytics. Code, data, and stories — built in the open for LA28 and beyond.</p>
     </div>
     <div class="ftr__cols">
@@ -15,6 +14,8 @@ const year = new Date().getFullYear();
         <a href="/projects">Projects</a>
         <a href="/community">Community board</a>
         <a href="/contributors">Contributors</a>
+        <a href="/about">About</a>
+        <a href="https://www.linkedin.com/groups/25550014/" target="_blank" rel="noopener">LinkedIn community ↗</a>
       </div>
       <div>
         <h4>Build</h4>
@@ -43,8 +44,7 @@ const year = new Date().getFullYear();
     display: grid; grid-template-columns: 1.3fr 2fr; gap: 2.5rem;
     padding-block: 3rem 2rem;
   }
-  .ftr__name { font-family: var(--display); font-weight: 700; font-size: 1.3rem; color: var(--paper); }
-  .ftr__name b { color: var(--lane); }
+  .ftr__logo { width: 200px; height: auto; margin-bottom: .4rem; }
   .ftr__tag { color: var(--gray-soft); max-width: 34ch; margin-top: .6rem; }
   .ftr__cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
   .ftr__cols h4 {

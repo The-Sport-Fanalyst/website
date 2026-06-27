@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
 import Base from '../layouts/Base.astro';
+import HeadConfetti from '../components/HeadConfetti.astro';
 
 const steps = [
   { n: 'Create an account', t: 'Sign in with GitHub. You start as a Member — you can comment, join projects, and post to the community board right away.' },
@@ -29,13 +30,15 @@ const templates = [
 ---
 <Base title="Contribute — The Sport Fanalyst">
   <section class="head">
-    <div class="wrap">
+    
+    <HeadConfetti />
+<div class="wrap">
       <p class="eyebrow">How it works</p>
-      <h1>Contribute to the open record.</h1>
+      <h1>Help build the open record of sport.</h1>
       <p class="lead">
-        The Sport Fanalyst runs on an open-source workflow. GitHub is the source of truth; this
-        site is the place to discover and collaborate. Here's how to join in — whether or not
-        you write code.
+        The Sport Fanalyst is powered by an open-source workflow. Every dataset, analysis, model,
+        and contribution has a place to be reviewed, improved, and built upon.
+        GitHub preserves the work. This community brings it to life.
       </p>
     </div>
   </section>

@@ -2,6 +2,7 @@
 export const prerender = true;
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
+import HeadConfetti from '../../components/HeadConfetti.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
 
 const projects = [...await getCollection('projects')].sort(
@@ -13,7 +14,9 @@ const gtypes = ['Olympic', 'Paralympic'];
 ---
 <Base title="Projects — The Sport Fanalyst">
   <section class="head">
-    <div class="wrap">
+    
+    <HeadConfetti />
+<div class="wrap">
       <p class="eyebrow">All projects</p>
       <h1>The project index</h1>
       <p class="lead">

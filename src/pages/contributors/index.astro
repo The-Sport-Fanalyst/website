@@ -2,6 +2,7 @@
 export const prerender = true;
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
+import HeadConfetti from '../../components/HeadConfetti.astro';
 import { roleForLogin, type Role } from '../../lib/roles';
 
 const projects = await getCollection('projects');
@@ -45,12 +46,15 @@ const roleBlurb: Record<Role, string> = {
 ---
 <Base title="Contributors — The Sport Fanalyst">
   <section class="head">
-    <div class="wrap">
+    
+    <HeadConfetti />
+<div class="wrap">
       <p class="eyebrow">People</p>
       <h1>Contributors</h1>
       <p class="lead">
-        The community behind the analysis. Everyone here has shipped at least one project —
-        contribute a project and you'll appear automatically.
+        Every contributor has built something that adds to the collective knowledge of sport.
+        Share a project, analysis, dataset, or tool—and your contribution becomes part of the
+        open record.
       </p>
     </div>
   </section>

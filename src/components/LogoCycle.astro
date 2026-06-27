@@ -1,0 +1,64 @@
+---
+// TSF header mark — rotates the four logos with a TRUE hard cut (no fade).
+// The non-active images use the HTML `hidden` attribute so they stay collapsed
+// even before CSS loads — preventing the header from briefly ballooning on
+// navigation (the "glitch" on logo click). Container has an explicit size so
+// there is no layout reflow.
+const logos = [
+  '/brand/Header_Logo_Yellow.png',
+  '/brand/Header_Logo_Blue.png',
+  '/brand/Header_Logo_Green.png',
+  '/brand/Header_Logo_Purple.png',
+];
+---
+<a href="/" class="logo-cycle" aria-label="The Sport Fanalyst — home">
+  {logos.map((src, i) => (
+    <img
+      src={src}
+      alt={i === 0 ? 'The Sport Fanalyst' : ''}
+      aria-hidden={i !== 0}
+      hidden={i !== 0}
+      class={i === 0 ? 'is-on' : ''}
+      fetchpriority="high"
+      decoding="async"
+    />
+  ))}
+</a>
+
+<style>
+  .logo-cycle {
+    display: block;
+    width: clamp(92px, 8vw, 118px);
+    aspect-ratio: 214 / 140;
+    flex: none;
+    line-height: 0;
+    position: relative;
+  }
+  .logo-cycle img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: left center;
+    display: none;
+  }
+  .logo-cycle img.is-on { display: block; }
+</style>
+
+<script>
+  (function () {
+    const cycles = document.querySelectorAll('.logo-cycle');
+    cycles.forEach((root) => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const imgs = Array.from(root.querySelectorAll('img'));
+      if (imgs.length < 2) return;
+      // ensure all are display-controlled (remove the hidden attr now that CSS owns it)
+      imgs.forEach((im) => im.removeAttribute('hidden'));
+      let idx = 0;
+      setInterval(() => {
+        imgs[idx].classList.remove('is-on');
+        idx = (idx + 1) % imgs.length;
+        imgs[idx].classList.add('is-on');
+      }, 1200);
+    });
+  })();
+</script>

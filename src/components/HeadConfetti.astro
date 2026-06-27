@@ -1,0 +1,34 @@
+---
+// Decorative confetti specks anchored to the right of a page's first section.
+// Matches the homepage hero treatment (design.md: first section of every page).
+// Purely decorative — aria-hidden, never behind text (sits to the right).
+---
+<div class="head-confetti" aria-hidden="true">
+  <img src="/brand/Climbing_Wall.svg" alt="" width="375" height="750" loading="eager" decoding="async" />
+</div>
+
+<style>
+  .head-confetti {
+    position: absolute;
+    top: 0; bottom: 0; right: calc(var(--gutter) * -1);
+    width: 42%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .head-confetti img {
+    position: absolute;
+    top: 50%; right: 0;
+    transform: translateY(-50%);
+    height: clamp(280px, 46vw, 560px);
+    width: auto; max-width: none;
+    opacity: .9;
+  }
+  @media (max-width: 900px) {
+    .head-confetti { width: 38%; opacity: .6; }
+    .head-confetti img { height: 220px; }
+  }
+  @media (max-width: 620px) {
+    .head-confetti { display: none; }
+  }
+</style>

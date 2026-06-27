@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import HeadConfetti from '../components/HeadConfetti.astro';
 import { CONTENT_REPO, CONTENT_BRANCH } from '../lib/content-repo';
 import { getCollection } from 'astro:content';
 
@@ -27,7 +28,9 @@ const kinds = [
 ---
 <Base title="Submit a project — The Sport Fanalyst">
   <section class="head">
-    <div class="wrap">
+    
+    <HeadConfetti />
+<div class="wrap">
       <p class="eyebrow">Contribute · Submission</p>
       <h1>Submit a project</h1>
       <p class="lead">

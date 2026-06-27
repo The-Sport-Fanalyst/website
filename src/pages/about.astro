@@ -1,0 +1,116 @@
+---
+export const prerender = true;
+import Base from '../layouts/Base.astro';
+import HeadConfetti from '../components/HeadConfetti.astro';
+---
+<Base title="About — The Sport Fanalyst">
+  <section class="head">
+    <HeadConfetti />
+    <div class="wrap about">
+      <div class="about__copy">
+        <h1>About Me</h1>
+        <p class="lead">
+          I'm <b>Selina Merfol</b>, founder of The Sport Fanalyst.
+        </p>
+        <p>
+          The Sport Fanalyst started with a simple idea: great work in sport should be easier to
+          find, explore, and build upon.
+        </p>
+        <p>
+          Across the sporting world, people are creating incredible datasets, analyses,
+          dashboards, models, and research—but much of it lives in separate places. This platform
+          brings those contributions together into one <span class="penmark pink">open</span>
+          community where people can discover, learn, and share knowledge across every sport.
+        </p>
+        <p>
+          A single repository, dashboard, or insight can help someone else understand a sport
+          better. Every contribution adds another piece to the bigger picture.
+        </p>
+        <p>
+          Because knowledge is power—and the more we learn about sport, the more we can help it
+          grow.
+        </p>
+
+        <div class="about__socials">
+          <a class="soc" href="https://www.linkedin.com/in/selina-merfol/" target="_blank" rel="noopener" aria-label="LinkedIn">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.5 8h4V23h-4V8zm7.5 0h3.8v2.05h.05c.53-1 1.83-2.05 3.76-2.05C19.6 8 22 9.97 22 14.06V23h-4v-7.94c0-1.89-.03-4.32-2.63-4.32-2.63 0-3.03 2.06-3.03 4.18V23h-4V8z"/></svg>
+            <span>LinkedIn</span>
+          </a>
+          <a class="soc" href="https://www.selinalytics.com/" target="_blank" rel="noopener" aria-label="Website">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm6.93 6h-2.95a15.7 15.7 0 00-1.38-3.56A8.03 8.03 0 0118.93 8zM12 4c.83 1.2 1.48 2.53 1.91 4h-3.82c.43-1.47 1.08-2.8 1.91-4zM4.26 14a7.96 7.96 0 010-4h3.38a16.5 16.5 0 000 4H4.26zm.81 2h2.95c.35 1.27.82 2.47 1.38 3.56A8.03 8.03 0 015.07 16zm2.95-8H5.07a8.03 8.03 0 014.33-3.56A15.7 15.7 0 008.02 8zM12 20c-.83-1.2-1.48-2.53-1.91-4h3.82A13.6 13.6 0 0112 20zm2.36-6H9.64a14.7 14.7 0 010-4h4.72a14.7 14.7 0 010 4zm.66 5.56c.56-1.09 1.03-2.29 1.38-3.56h2.95a8.03 8.03 0 01-4.33 3.56zM16.36 14a16.5 16.5 0 000-4h3.38a7.96 7.96 0 010 4h-3.38z"/></svg>
+            <span>Website</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="about__media">
+        <figure class="portrait">
+          <img class="portrait__img" src="/about/selina.jpeg" alt="Selina Merfol" width="403" height="403" />
+          <img class="portrait__stamp" src="/brand/wordmark.svg" alt="" aria-hidden="true" width="150" height="150" />
+        </figure>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .head { border-bottom: 0; }
+  .about {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: center;
+    padding-block: clamp(2.5rem, 6vw, 5rem);
+    position: relative;
+    z-index: 1;
+  }
+  .about__copy h1 {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    letter-spacing: -0.03em;
+    margin: 0 0 1.2rem;
+  }
+  .lead { font-size: clamp(1.1rem, 2vw, 1.35rem); margin: 0 0 1.4rem; }
+  .about__copy p { color: var(--ink-soft); max-width: 56ch; }
+  .about__copy b { font-weight: 700; }
+
+  .about__socials { display: flex; gap: .8rem; margin-top: 2rem; flex-wrap: wrap; }
+  .soc {
+    display: inline-flex; align-items: center; gap: .5rem;
+    text-decoration: none; color: var(--ink);
+    border: 2px solid var(--ink); border-radius: 99px;
+    padding: .55rem 1.1rem;
+    font-family: var(--sans); font-weight: 600; font-size: .85rem;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .soc:hover { transform: translateY(-2px); box-shadow: 0 6px 0 -1px var(--accent-pink); }
+  .soc svg { display: block; }
+
+  /* portrait with playful wordmark stamp */
+  .about__media { display: flex; justify-content: center; }
+  .portrait {
+    position: relative;
+    margin: 0;
+    width: min(100%, 380px);
+  }
+  .portrait__img {
+    width: 100%; height: auto;
+    border-radius: 22px;
+    filter: grayscale(100%);
+    display: block;
+  }
+  .portrait__stamp {
+    position: absolute;
+    bottom: -22px; right: -22px;
+    width: clamp(96px, 13vw, 140px);
+    height: auto;
+    transform: rotate(-12deg);
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,.18));
+  }
+
+  @media (max-width: 860px) {
+    .about { grid-template-columns: 1fr; }
+    .about__media { order: -1; margin-bottom: 1.5rem; }
+    .portrait { width: min(100%, 320px); }
+    .portrait__stamp { bottom: -16px; right: -10px; }
+  }
+</style>

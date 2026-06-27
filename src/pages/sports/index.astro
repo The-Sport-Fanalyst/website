@@ -2,6 +2,7 @@
 export const prerender = true;
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
+import HeadConfetti from '../../components/HeadConfetti.astro';
 
 const sports = (await getCollection('sports')).sort((a, b) => a.data.order - b.data.order);
 const projects = await getCollection('projects');
@@ -17,14 +18,20 @@ const paralympicCount = sports.filter((s) => s.data.paralympic).length;
 ---
 <Base title="Sports — The Sport Fanalyst">
   <section class="head">
-    <div class="wrap">
+    
+    <HeadConfetti />
+<div class="wrap">
       <p class="eyebrow">Directory</p>
       <h1>Sports</h1>
       <p class="lead">
-        Every LA28 Olympic and Paralympic sport has a home here for data, research, models,
-        and apps. {withProjects.length > 0
-          ? 'Some already have projects — the rest are wide open.'
-          : 'Every one is wide open — be the first to start a project.'}
+        <b>Every sport deserves a place here.</b><br />
+        Whether it's non-disabled, Para, or an emerging sport, The Sport Fanalyst is a home for
+        the data, research, models, and tools that help us understand the game.
+      </p>
+      <p class="lead">
+        Some sports already have projects. Others are waiting for their first contribution.
+        Whether you share a full dashboard, a dataset, a research project, or a small piece of
+        knowledge—every contribution helps build the bigger picture.
       </p>
       <div class="stats">
         <span><b>{sports.length}</b> sports</span>
@@ -41,11 +48,8 @@ const paralympicCount = sports.filter((s) => s.data.paralympic).length;
       <div class="dir">
         {withProjects.map((s, i) => (
           <a href={`/sports/${s.data.slug}`} class="row">
-            <span class="row__num">{String(i + 1).padStart(2, '0')}</span>
-            <span class="row__icon">{s.data.icon}</span>
             <span class="row__body">
               <span class="row__name">{s.data.name}</span>
-              <span class="row__desc">{s.data.description}</span>
             </span>
             <span class="row__side">
               <span class="row__games">
@@ -68,13 +72,11 @@ const paralympicCount = sports.filter((s) => s.data.paralympic).length;
         <a href="/submit" class="band__link">Start a project →</a>
       </header>
       <p class="band__lead">
-        {withProjects.length > 0 ? 'These sports' : 'Every sport below'} is waiting for its first
-        contribution — a dataset, a question, a model, or an app. Claim one.
+        These sports is waiting for its first contribution — a dataset, a question, a model, or an app.
       </p>
       <div class="grid">
         {empty.map((s) => (
           <a href={`/sports/${s.data.slug}`} class="tile">
-            <span class="tile__icon">{s.data.icon}</span>
             <span class="tile__name">{s.data.name}</span>
             <span class="tile__games">
               {s.data.olympic && <i class="chip chip--olympic">Olympic</i>}
@@ -111,7 +113,7 @@ const paralympicCount = sports.filter((s) => s.data.paralympic).length;
 
   .dir { border-top: 0; }
   .row {
-    display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 1.2rem;
+    display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 1.2rem;
     padding: 1.5rem 0; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--ink);
     transition: padding-left .15s ease;
   }
@@ -143,10 +145,8 @@ const paralympicCount = sports.filter((s) => s.data.paralympic).length;
   .note a { color: var(--brick); }
 
   @media (max-width: 720px) {
-    .row { grid-template-columns: auto 1fr; gap: .8rem 1rem; }
-    .row__icon { grid-row: 1 / 3; }
-    .row__side { grid-column: 1 / 3; flex-direction: row; align-items: center; justify-content: space-between; }
+    .row { grid-template-columns: 1fr; gap: .8rem 1rem; }
+    .row__side { flex-direction: row; align-items: center; justify-content: space-between; }
     .row__arrow { display: none; }
-    .row__num { display: none; }
   }
 </style>

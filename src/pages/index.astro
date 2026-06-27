@@ -39,29 +39,29 @@ const catBlurb: Record<string, string> = {
   <AnnouncementStrip />
   <section class="hero">
     <div class="wrap hero__inner">
-      <p class="eyebrow">Open analytics community · Flagship: LA28</p>
-      <h1 class="hero__h">
-        The Olympics, <span class="u-brick">measured</span> in the open.
-      </h1>
-      <p class="hero__sub">
-        A community-built home for Olympic and Paralympic <b>data</b>, <b>research</b>,
-        <b>models</b>, and <b>apps</b>. Like GitHub for collaboration, Wikipedia for
-        knowledge, and Kaggle for projects — pointed at the Games.
-      </p>
-      <div class="hero__cta">
-        <a href="/sports" class="btn">Explore the sports →</a>
-        <a href="/contribute" class="btn btn--ghost">Start contributing</a>
-      </div>
+      <div class="hero__copy">
+        <p class="eyebrow">Open analytics community · Flagship: LA28</p>
+        <h1 class="hero__h">
+          All sport, <span class="penmark pink">analyzed</span> in the open.
+        </h1>
+        <p class="hero__sub">
+          A community-built home for <b>data</b>, <b>research</b>, <b>models</b>, and <b>apps</b>
+          across every Olympic, Paralympic, and emerging sport.
+        </p>
+        <div class="hero__cta">
+          <a href="/sports" class="btn">Explore the sports →</a>
+          <a href="/contribute" class="btn btn--ghost">Start contributing</a>
+        </div>
 
-      <dl class="hero__stats">
-        <div><dt>{stats.sports}</dt><dd>Sports hubs</dd></div>
-        <div><dt>{stats.projects}</dt><dd>Projects</dd></div>
-        <div><dt>{stats.contributors}</dt><dd>Contributors</dd></div>
-        <div><dt>{stats.open}</dt><dd>Open calls</dd></div>
-      </dl>
-    </div>
-    <div class="hero__lanes" aria-hidden="true">
-      <span></span><span></span><span></span><span></span><span></span>
+        <dl class="hero__stats">
+          <div><dt>{stats.sports}</dt><dd>Sports</dd></div>
+          <div><dt>{stats.projects}</dt><dd>Projects</dd></div>
+          <div><dt>{stats.contributors}</dt><dd>Contributors</dd></div>
+        </dl>
+      </div>
+      <div class="hero__art" aria-hidden="true">
+        <img src="/brand/Climbing_Wall.svg" alt="" width="375" height="750" />
+      </div>
     </div>
   </section>
 
@@ -119,7 +119,6 @@ const catBlurb: Record<string, string> = {
       <div class="strip">
         {sports.slice(0, 8).map((s) => (
           <a href={`/sports/${s.data.slug}`} class="strip__card">
-            <span class="strip__icon">{s.data.icon}</span>
             <span class="strip__name">{s.data.name}</span>
             <span class="strip__games">
               {s.data.olympic && <i class="chip chip--olympic">Olympic</i>}
@@ -161,10 +160,11 @@ const catBlurb: Record<string, string> = {
     <div class="wrap join__inner">
       <div>
         <p class="eyebrow">Everyone is welcome</p>
-        <h2 class="join__h">You don't have to write code to belong here.</h2>
+        <h2 class="join__h">Sport advances when knowledge is shared.</h2>
         <p class="join__sub">
-          Transcribe a results book. Fact-check a study. Write an explainer. Propose a question.
-          Trust is built in the open — every analysis shows its sources, methods, and author.
+          Every dataset, result, model, and insight strengthens the foundation for the next
+          discovery. Whether you collect data, review research, write documentation, or build
+          tools, your work helps create an open resource anyone can learn from and improve.
         </p>
       </div>
       <a href="/contribute" class="btn">Read the contributor guide →</a>
@@ -173,43 +173,46 @@ const catBlurb: Record<string, string> = {
 </Base>
 
 <style>
-  .u-brick { color: var(--brick); }
-
-  .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
-  .hero__inner { padding-block: clamp(3rem, 8vw, 6rem); position: relative; z-index: 2; max-width: 940px; }
-  .hero__h {
-    font-size: clamp(2.6rem, 7vw, 5rem); line-height: 0.98; letter-spacing: -0.03em;
-    font-weight: 700; margin: 1.2rem 0 0;
+  .hero { position: relative; overflow: hidden; }
+  .hero__inner {
+    padding-block: clamp(2.4rem, 6vw, 5rem); position: relative; z-index: 2;
+    display: grid; grid-template-columns: 1.05fr 0.95fr; gap: clamp(1rem, 3vw, 2.5rem); align-items: center;
   }
-  .hero__sub { font-size: clamp(1.05rem, 2.2vw, 1.3rem); max-width: 52ch; margin: 1.4rem 0 2rem; color: var(--ink-soft); }
-  .hero__sub b { font-weight: 600; }
+  .hero__copy { min-width: 0; }
+  .hero__h {
+    font-size: clamp(2.4rem, 6vw, 4.8rem); line-height: 0.98; letter-spacing: -0.03em;
+    font-weight: 900; margin: 1.2rem 0 0;
+  }
+  .hero__sub { font-size: clamp(1rem, 1.6vw, 1.25rem); max-width: 50ch; margin: 1.4rem 0 2rem; color: var(--ink-soft); }
+  .hero__sub b { font-weight: 700; }
   .hero__cta { display: flex; gap: .8rem; flex-wrap: wrap; }
   .hero__stats {
-    display: flex; gap: clamp(1.5rem, 5vw, 3.5rem); margin: 2.8rem 0 0; padding: 0;
-    border-top: 1px solid var(--line); padding-top: 1.6rem;
+    display: flex; gap: clamp(1.5rem, 5vw, 3.5rem); margin: 2.6rem 0 0; padding: 1.6rem 0 0;
+    border-top: 2px solid var(--ink);
   }
   .hero__stats div { margin: 0; }
-  .hero__stats dt { font-family: var(--display); font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; }
-  .hero__stats dd { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--gray); margin: .2rem 0 0; }
+  .hero__stats dt { font-family: var(--display); font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 900; }
+  .hero__stats dd { font-family: var(--mono); font-weight: 600; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--gray); margin: .2rem 0 0; }
 
-  .hero__lanes {
-    position: absolute; inset: 0 0 0 auto; width: 42%;
-    display: flex; gap: 0; opacity: .5; z-index: 1; pointer-events: none;
+  /* confetti art pushed to the right edge and enlarged so it bleeds off-canvas */
+  .hero__art { position: relative; z-index: 1; align-self: stretch; min-height: 320px; }
+  .hero__art img {
+    position: absolute; top: 50%; right: calc(var(--gutter) * -1);
+    transform: translateY(-50%);
+    height: clamp(360px, 60vw, 660px); width: auto; max-width: none; opacity: .95;
   }
-  .hero__lanes span { flex: 1; height: 100%; transform: skewX(-12deg) translateX(20%); }
-  .hero__lanes span:nth-child(1){ background: var(--paper-dim); }
-  .hero__lanes span:nth-child(2){ background: var(--lane); opacity: .25; }
-  .hero__lanes span:nth-child(3){ background: var(--paper-dim); }
-  .hero__lanes span:nth-child(4){ background: var(--brick); opacity: .14; }
-  .hero__lanes span:nth-child(5){ background: var(--paper-dim); }
-  @media (max-width: 760px) { .hero__lanes { display: none; } }
+  @media (max-width: 900px) {
+    .hero__inner { grid-template-columns: 1fr; }
+    .hero__art { order: -1; min-height: 140px; }
+    .hero__art img { position: static; transform: none; height: 150px; margin-left: auto; right: 0; }
+  }
 
   .cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
   .cat { background: var(--paper); padding: 1.2rem 1.3rem; display: flex; flex-direction: column; gap: .35rem; border-top: var(--rail) solid var(--ink); }
-  .cat--data { border-top-color: var(--slate); }
-  .cat--research { border-top-color: var(--brick); }
-  .cat--models { border-top-color: var(--lane); }
-  .cat--apps { border-top-color: var(--gray); }
+  .cat--data { border-top-color: var(--accent-cyan); }
+  .cat--research { border-top-color: var(--accent-pink); }
+  .cat--models { border-top-color: var(--accent-lime); }
+  .cat--apps { border-top-color: var(--accent-yellow); }
   .cat__name { font-family: var(--display); font-weight: 600; font-size: 1.15rem; }
   .cat__blurb { font-size: .85rem; color: var(--gray); }
   @media (max-width: 720px) { .cats { grid-template-columns: repeat(2, 1fr); } }
@@ -224,19 +227,19 @@ const catBlurb: Record<string, string> = {
   .home-empty { border: 1px dashed var(--line); border-left: var(--rail) solid var(--lane); padding: 2rem; display: flex; flex-direction: column; align-items: flex-start; gap: 1.2rem; }
   .home-empty p { margin: 0; color: var(--ink-soft); max-width: 60ch; font-size: 1.05rem; }
   .strip__more { margin: 1.2rem 0 0; }
-  .strip__more a { font-family: var(--mono); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--lane); text-decoration: none; }
+  .strip__more a { font-family: var(--mono); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--accent-pink); text-decoration: none; }
   .strip__more a:hover { text-decoration: underline; }
 
   .sports-strip { background: var(--ink); color: var(--paper); padding-block: clamp(3rem, 6vw, 5rem); }
-  .band--invert { border-color: var(--lane); }
+  .band--invert { border-color: var(--accent-pink); }
   .band--invert h2 { color: var(--paper); }
-  .band--invert .band__link { color: var(--lane); }
+  .band--invert .band__link { color: var(--accent-pink); }
   .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #2A2A26; border: 1px solid #2A2A26; margin-top: 1.6rem; }
   @media (max-width: 880px) { .strip { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 480px) { .strip { grid-template-columns: 1fr; } }
   .strip__card { background: var(--ink); padding: 1.4rem; text-decoration: none; color: var(--paper); display: flex; flex-direction: column; gap: .6rem; transition: background .15s; }
   .strip__card:hover { background: #1A1A16; }
-  .strip__icon { font-size: 1.8rem; color: var(--lane); }
+  .strip__icon { font-size: 1.8rem; color: var(--accent-pink); }
   .strip__name { font-family: var(--display); font-weight: 600; font-size: 1.25rem; }
   .strip__games { display: flex; gap: .4rem; }
   .strip__games .chip { background: transparent; }
