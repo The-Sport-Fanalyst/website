@@ -1,0 +1,256 @@
+---
+export const prerender = true;
+import Base from '../../layouts/Base.astro';
+import HeadConfetti from '../../components/HeadConfetti.astro';
+import { CONTENT_REPO, CONTENT_BRANCH, CONTENT_PATHS } from '../../lib/content-repo';
+
+const FOLDER = CONTENT_PATHS.job;
+
+// Default the closing date to ~60 days out so the field is never empty by accident.
+const soon = new Date();
+soon.setDate(soon.getDate() + 60);
+const defaultCloses = soon.toISOString().slice(0, 10);
+const todayStr = new Date().toISOString().slice(0, 10);
+---
+<Base
+  title="Post a job — The Sport Fanalyst"
+  description="Share a data, analytics, or research role in sport."
+>
+  <section class="head">
+    <HeadConfetti />
+    <div class="wrap">
+      <h1>Post a job</h1>
+      <p class="lead">
+        Fill this in and we'll format it correctly and open a pull request on GitHub for you
+        to confirm. A maintainer reviews it there.
+      </p>
+    </div>
+  </section>
+
+  <div class="wrap section sub">
+    <form class="form" id="job-form" autocomplete="off">
+      <label class="field">
+        <span class="field__lbl">Job title <i>required</i></span>
+        <input type="text" name="title" placeholder="e.g. Data Scientist, Performance" />
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__lbl">Company / organization <i>required</i></span>
+          <input type="text" name="company" placeholder="e.g. Example Sports Tech" />
+        </label>
+        <label class="field">
+          <span class="field__lbl">Link to the posting <i>required</i></span>
+          <input type="url" name="url" placeholder="https://…" />
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__lbl">Location</span>
+          <input type="text" name="location" placeholder="e.g. Boulder, CO" />
+        </label>
+        <label class="field field--check">
+          <input type="checkbox" name="remote" />
+          <span>This role is remote</span>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__lbl">Role type <i>required</i></span>
+          <select name="category">
+            <option value="Data Science">Data Science</option>
+            <option value="Data Engineering">Data Engineering</option>
+            <option value="Analytics">Analytics</option>
+            <option value="Research">Research</option>
+            <option value="Business Intelligence">Business Intelligence</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__lbl">Organization type <i>required</i></span>
+          <select name="org_type">
+            <option value="Sports tech">Sports tech</option>
+            <option value="League">League</option>
+            <option value="Team">Team</option>
+            <option value="Governing body">Governing body</option>
+            <option value="Media">Media</option>
+            <option value="Academic">Academic</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__lbl">Employment type</span>
+          <select name="employment_type">
+            <option value="Full-time">Full-time</option>
+            <option value="Part-time">Part-time</option>
+            <option value="Contract">Contract</option>
+            <option value="Internship">Internship</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__lbl">Sport</span>
+          <input type="text" name="sport" placeholder="Optional — e.g. Athletics" />
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__lbl">Closing date <i>required</i></span>
+          <input type="date" name="closes" value={defaultCloses} min={todayStr} />
+          <span class="field__hint">
+            The listing disappears automatically after this date. If the posting doesn't
+            give one, pick a sensible date — it can always be extended.
+          </span>
+        </label>
+        <label class="field">
+          <span class="field__lbl">Posted on</span>
+          <input type="date" name="posted_date" value={todayStr} />
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field__lbl">One-line summary</span>
+        <input type="text" name="summary" maxlength="140" placeholder="In your own words — e.g. Build the pipelines behind their athlete dashboards." />
+        <span class="field__hint">
+          Optional, and please write your own. Don't paste the job description —
+          it's the employer's copyrighted text, and the card links to the original anyway.
+        </span>
+      </label>
+    </form>
+
+    <aside class="preview">
+      <h2>Preview</h2>
+      <p class="preview__path">
+        This becomes <code id="fname">{FOLDER}/…</code> in
+        <code>{CONTENT_REPO}</code> on branch <code>{CONTENT_BRANCH}</code>.
+      </p>
+      <pre class="preview__md" id="md"></pre>
+      <a class="btn is-disabled" id="prlink" href="#" aria-disabled="true" target="_blank" rel="noopener">
+        Open pull request on GitHub ↗
+      </a>
+      <p class="preview__note">
+        You'll review and confirm on GitHub — nothing is published until a maintainer merges it.
+      </p>
+    </aside>
+  </div>
+</Base>
+
+<style>
+  .head h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); margin: 0 0 .8rem; }
+  .lead { max-width: 62ch; color: var(--ink-soft); margin: 0; }
+
+  .sub { display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(1.5rem, 4vw, 3rem); align-items: start; }
+  @media (max-width: 900px) { .sub { grid-template-columns: 1fr; } }
+
+  .form { display: flex; flex-direction: column; gap: 1.1rem; }
+  .field { display: flex; flex-direction: column; gap: .35rem; }
+  .field__lbl { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--gray); }
+  .field__lbl i { font-style: normal; color: var(--accent-pink); margin-left: .4rem; }
+  .field__hint { font-size: .78rem; color: var(--gray); }
+  .field input, .field select {
+    font-family: var(--sans); font-size: .95rem; padding: .6rem .7rem;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px;
+  }
+  .field input:focus, .field select:focus { outline: 2px solid var(--accent-pink); outline-offset: 1px; border-color: var(--ink); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 640px) { .field-row { grid-template-columns: 1fr; } }
+  .field--check { flex-direction: row; align-items: center; gap: .5rem; align-self: end; padding-bottom: .6rem; }
+  .field--check input { width: 18px; height: 18px; }
+
+  .preview { border: 2px solid var(--ink); border-radius: var(--radius); padding: 1.2rem; background: var(--surface); position: sticky; top: 96px; }
+  .preview h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
+  .preview__path { font-size: .78rem; color: var(--gray); margin: 0 0 .8rem; }
+  .preview__path code { font-family: var(--mono); font-size: .74rem; background: var(--paper-dim); padding: .1rem .3rem; border-radius: 4px; }
+  .preview__md {
+    font-family: var(--mono); font-size: .72rem; line-height: 1.5;
+    background: var(--ink); color: #fff; padding: .9rem; border-radius: 8px;
+    max-height: 320px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+  }
+  .preview__note { font-size: .78rem; color: var(--gray); margin: .8rem 0 0; }
+  .btn.is-disabled { opacity: .45; pointer-events: none; }
+</style>
+
+<script define:vars={{ FOLDER, CONTENT_REPO, CONTENT_BRANCH }}>
+  const form = document.getElementById('job-form');
+  const mdEl = document.getElementById('md');
+  const fnameEl = document.getElementById('fname');
+  const prlink = document.getElementById('prlink');
+
+  const jstr = (s) => JSON.stringify(s ?? '');
+
+  const slugify = (s) =>
+    (s || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+
+  function read() {
+    const f = new FormData(form);
+    const get = (k) => String(f.get(k) || '').trim();
+    return {
+      title: get('title'),
+      company: get('company'),
+      url: get('url'),
+      location: get('location'),
+      remote: f.get('remote') === 'on',
+      category: get('category'),
+      org_type: get('org_type'),
+      employment_type: get('employment_type'),
+      sport: get('sport'),
+      summary: get('summary'),
+      posted_date: get('posted_date'),
+      closes: get('closes'),
+    };
+  }
+
+  function build(d) {
+    const lines = [
+      '---',
+      `title: ${jstr(d.title)}`,
+      `company: ${jstr(d.company)}`,
+      `url: ${jstr(d.url)}`,
+      d.location ? `location: ${jstr(d.location)}` : null,
+      `remote: ${d.remote}`,
+      `category: ${jstr(d.category)}`,
+      `org_type: ${jstr(d.org_type)}`,
+      `employment_type: ${jstr(d.employment_type)}`,
+      d.sport ? `sport: ${jstr(d.sport)}` : null,
+      d.summary ? `summary: ${jstr(d.summary)}` : null,
+      `posted_date: ${d.posted_date}`,
+      `closes: ${d.closes}`,
+      '---',
+      '',
+    ].filter(Boolean);
+    return lines.join('\n');
+  }
+
+  function update() {
+    const d = read();
+    const filename = `${FOLDER}/${d.closes || 'undated'}-${slugify(d.company)}-${slugify(d.title)}.md`;
+    const md = build(d);
+
+    fnameEl.textContent = filename;
+    mdEl.textContent = md;
+
+    // Closing date is required — without it the board fills with dead links.
+    const valid = Boolean(d.title && d.company && d.url && d.closes && d.posted_date);
+
+    const params = new URLSearchParams({
+      filename,
+      value: md,
+      message: `Add job: ${d.title || 'untitled'} at ${d.company || 'unknown'}`,
+      description: 'Submitted via The Sport Fanalyst jobs form.',
+    });
+    const prUrl = `https://github.com/${CONTENT_REPO}/new/${CONTENT_BRANCH}?${params.toString()}`;
+
+    prlink.setAttribute('href', valid ? prUrl : '#');
+    prlink.toggleAttribute('aria-disabled', !valid);
+    prlink.classList.toggle('is-disabled', !valid);
+  }
+
+  form.addEventListener('input', update);
+  form.addEventListener('change', update);
+  update();
+</script>

@@ -20,6 +20,7 @@ export interface SubmissionInput {
   description: string;
   github_url?: string;
   demo_url?: string;
+  links?: Array<{ type?: string; url: string }>;
   data_sources?: string[];
   season?: 'Summer' | 'Winter';
   gtype?: 'Olympic' | 'Paralympic';
@@ -68,6 +69,12 @@ export function buildMarkdown(input: SubmissionInput): string {
     `status: In review`,
     input.github_url ? `github_url: ${JSON.stringify(input.github_url)}` : null,
     input.demo_url ? `demo_url: ${JSON.stringify(input.demo_url)}` : null,
+    input.links && input.links.length
+      ? 'links:\n' + input.links
+          .filter((l) => l && l.url)
+          .map((l) => `  - type: ${l.type || 'other'}\n    url: ${JSON.stringify(l.url)}`)
+          .join('\n')
+      : null,
     `data_sources: ${yamlList(input.data_sources ?? [])}`,
     `contributors: []`,
     `created_date: ${today}`,

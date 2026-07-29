@@ -9,8 +9,14 @@ interface Props {
 }
 const {
   title = 'The Sport Fanalyst — Open Olympic & Paralympic Analytics',
-  description = 'A community-built home for Olympic and Paralympic data, research, models, and apps. Open source. Built for LA28.',
+  description = 'A community-built home for data, research, models, and apps across Olympic, Paralympic and emerging sport.',
 } = Astro.props;
+
+// Absolute URLs are required for social previews. Falls back gracefully if
+// `site` isn't set in astro.config.mjs.
+const SITE = Astro.site ?? new URL('https://www.thesportfanalyst.com');
+const pageUrl = new URL(Astro.url.pathname, SITE).href;
+const ogImage = new URL('/brand/social-card.png', SITE).href;
 ---
 
 <!doctype html>
@@ -20,13 +26,26 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={pageUrl} />
     <link rel="icon" type="image/svg+xml" href="/brand/Full_Logo_Color.svg" />
+
+    {/* Social share preview (LinkedIn, Slack, iMessage, X, Facebook) */}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="The Sport Fanalyst" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Sport Fanalyst" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>

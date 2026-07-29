@@ -1,0 +1,55 @@
+---
+/**
+ * Job highlights for the homepage — the few most recent open roles, linking
+ * through to the full board. Renders nothing when there are no open jobs.
+ */
+import { getCollection } from 'astro:content';
+
+const all = await getCollection('jobs').catch(() => []);
+const today = new Date();
+
+const jobs = all
+  .filter((j) => j.data.closes >= today)
+  .sort((a, b) => b.data.posted_date.valueOf() - a.data.posted_date.valueOf())
+  .slice(0, 3);
+---
+
+{jobs.length > 0 && (
+  <section class="section wrap">
+    <header class="band">
+      <h2>Jobs in sport data</h2>
+      <a href="/jobs" class="band__link">All jobs →</a>
+    </header>
+    <p class="band__lead">Recently posted data, analytics, and research roles.</p>
+
+    <ul class="jh">
+      {jobs.map((j) => (
+        <li class="jh__row">
+          <div>
+            <a class="jh__title" href={j.data.url} target="_blank" rel="noopener">
+              {j.data.title}
+            </a>
+            <p class="jh__meta">
+              {j.data.company}
+              <span class="jh__dot">·</span>
+              {j.data.remote ? 'Remote' : j.data.location}
+            </p>
+          </div>
+          <span class="chip">{j.data.category}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .jh { list-style: none; padding: 0; margin: 0; border-top: 2px solid var(--ink); }
+  .jh__row {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 1rem 0; border-bottom: 1px solid var(--line);
+  }
+  .jh__title { font-family: var(--display); font-weight: 600; font-size: 1.05rem; text-decoration: none; }
+  .jh__title:hover { color: var(--accent-pink); }
+  .jh__meta { margin: .2rem 0 0; font-size: .88rem; color: var(--gray); }
+  .jh__dot { margin: 0 .45rem; color: var(--gray-soft); }
+</style>

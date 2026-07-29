@@ -169,7 +169,31 @@ export interface AnnouncementItem {
   author: string | null;
   avatar: string | null;
   createdAt: string;
+  /** Short one-liner (used by the slim header strip). */
   excerpt: string;
+  /** Fuller announcement text for the homepage carousel. */
+  summary: string;
+  /** First image found in the discussion body, if any. */
+  image: string | null;
+}
+
+/**
+ * Pull the first image out of a discussion's markdown body.
+ * Supports both the markdown form GitHub writes when you drag a file in
+ * (`![alt](https://...)`) and a raw <img src="https://..."> tag.
+ * Only https is accepted.
+ */
+export function firstImageFrom(body: string | null | undefined): string | null {
+  if (!body) return null;
+  const patterns = [
+    /!\[[^\]]*\]\((https:\/\/[^)\s]+)/i,
+    /<img[^>]+src=["'](https:\/\/[^"']+)["']/i,
+  ];
+  for (const re of patterns) {
+    const m = body.match(re);
+    if (m && m[1]) return m[1].replace(/[)\s]+$/, '');
+  }
+  return null;
 }
 
 const ANNOUNCEMENTS_CATEGORY = env('DISC_CAT_ANNOUNCEMENTS') || 'Announcements';
@@ -188,12 +212,28 @@ export function announcersConfigured(): boolean {
 
 export async function fetchAnnouncements(limit = 5): Promise<AnnouncementItem[]> {
   const t = token();
-  if (!t) return [];
+  if (!t) {
+    console.warn(
+      '[announcements] No GITHUB_DISCUSSIONS_TOKEN — announcements will not show. ' +
+      '(Expected locally; set it in Netlify for the deployed site.)'
+    );
+    return [];
+  }
   const approved = approvedAnnouncers();
-  if (approved.size === 0) return []; // fail closed: no allowlist, no announcements
+  if (approved.size === 0) {
+    // fail closed: no allowlist, no announcements
+    console.warn(
+      '[announcements] ANNOUNCERS is empty or unset — nothing will show. ' +
+      'Set it to a comma-separated list of GitHub logins, e.g. "selinalytics".'
+    );
+    return [];
+  }
 
   const [owner, repo] = DISCUSSIONS_REPO.split('/');
-  if (!owner || !repo) return [];
+  if (!owner || !repo) {
+    console.warn(`[announcements] CONTENT_REPO looks wrong: "${DISCUSSIONS_REPO}"`);
+    return [];
+  }
 
   // Fetch recent discussions and filter to the Announcements category + approved
   // authors. (Fetching a few extra covers the case where recent items are mixed
@@ -203,7 +243,7 @@ export async function fetchAnnouncements(limit = 5): Promise<AnnouncementItem[]>
       repository(owner:$owner, name:$repo) {
         discussions(first:$n, orderBy:{field:CREATED_AT, direction:DESC}) {
           nodes {
-            title url createdAt bodyText
+            title url createdAt bodyText body
             category { name }
             author { login avatarUrl }
           }
@@ -227,9 +267,45 @@ export async function fetchAnnouncements(limit = 5): Promise<AnnouncementItem[]>
       return [];
     }
     const json: any = await res.json();
+    // GitHub returns HTTP 200 with an `errors` array for GraphQL problems,
+    // so this has to be checked explicitly or failures look like "no results".
+    if (json?.errors?.length) {
+      console.warn(
+        '[announcements] GitHub GraphQL error: ' +
+        json.errors.map((e: any) => e.message).join('; ')
+      );
+      return [];
+    }
     const nodes = json?.data?.repository?.discussions?.nodes ?? [];
-    return nodes
-      .filter((n: any) => (n.category?.name ?? '') === ANNOUNCEMENTS_CATEGORY)
+    if (nodes.length === 0) {
+      console.warn('[announcements] No discussions returned — check the token has Discussions: read on ' + DISCUSSIONS_REPO);
+    }
+
+    const inCategory = nodes.filter(
+      (n: any) => (n.category?.name ?? '') === ANNOUNCEMENTS_CATEGORY
+    );
+    if (nodes.length > 0 && inCategory.length === 0) {
+      const seen = Array.from(new Set(nodes.map((n: any) => n.category?.name).filter(Boolean)));
+      console.warn(
+        `[announcements] No discussions in category "${ANNOUNCEMENTS_CATEGORY}". ` +
+        `Categories found: ${seen.join(', ') || '(none)'}. ` +
+        'If the name differs, set DISC_CAT_ANNOUNCEMENTS to match.'
+      );
+    }
+
+    const matched = inCategory.filter((n: any) => {
+      const login = (n.author?.login ?? '').toLowerCase();
+      return login && approved.has(login);
+    });
+    if (inCategory.length > 0 && matched.length === 0) {
+      const authors = Array.from(new Set(inCategory.map((n: any) => n.author?.login).filter(Boolean)));
+      console.warn(
+        `[announcements] Found ${inCategory.length} announcement(s) but none by an approved author. ` +
+        `Authors: ${authors.join(', ')}. ANNOUNCERS currently: ${Array.from(approved).join(', ')}.`
+      );
+    }
+
+    return matched
       .filter((n: any) => {
         const login = (n.author?.login ?? '').toLowerCase();
         return login && approved.has(login);
@@ -242,6 +318,8 @@ export async function fetchAnnouncements(limit = 5): Promise<AnnouncementItem[]>
         avatar: n.author?.avatarUrl ?? null,
         createdAt: n.createdAt,
         excerpt: (n.bodyText ?? '').replace(/\s+/g, ' ').slice(0, 140).trim(),
+        summary: (n.bodyText ?? '').replace(/\s+/g, ' ').slice(0, 400).trim(),
+        image: firstImageFrom(n.body),
       }));
   } catch (err) {
     console.warn('[announcements] fetch failed — none shown.', err);

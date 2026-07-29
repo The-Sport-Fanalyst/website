@@ -14,6 +14,8 @@ import netlify from '@astrojs/netlify';
 //   - Vercel:            @astrojs/vercel
 // The auth code is adapter-agnostic; only this line changes.
 export default defineConfig({
+  // Used to build absolute URLs for social share previews (og:image, og:url).
+  site: 'https://www.thesportfanalyst.com',
   output: 'server',
   adapter: netlify(),
 });

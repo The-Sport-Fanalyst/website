@@ -4,6 +4,8 @@ import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import AnnouncementStrip from '../components/AnnouncementStrip.astro';
+import AnnouncementCarousel from '../components/AnnouncementCarousel.astro';
+import JobHighlights from '../components/JobHighlights.astro';
 
 const sports = (await getCollection('sports')).sort((a, b) => a.data.order - b.data.order);
 const allProjects = await getCollection('projects');
@@ -76,6 +78,8 @@ const catBlurb: Record<string, string> = {
     </div>
   </section>
 
+  <AnnouncementCarousel />
+
   <section class="section wrap">
     <header class="band">
       <h2>{featured.length > 0 ? 'Featured projects' : (showcase.length > 0 ? 'Latest projects' : 'Projects')}</h2>
@@ -93,7 +97,7 @@ const catBlurb: Record<string, string> = {
               category={p.data.category}
               description={p.data.description}
               status={p.data.status}
-              github_url={p.data.github_url}
+              github_url={p.data.github_url} links={p.data.links}
               demo_url={p.data.demo_url}
               contributors={p.data.contributors}
               games={p.data.games}
@@ -155,6 +159,8 @@ const catBlurb: Record<string, string> = {
     </ol>
   </section>
   )}
+
+  <JobHighlights />
 
   <section class="join">
     <div class="wrap join__inner">

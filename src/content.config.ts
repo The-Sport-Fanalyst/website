@@ -28,6 +28,17 @@ const projects = defineCollection({
     status: z.enum(['Active', 'Seeking collaborators', 'In review', 'Archived']).default('Active'),
     github_url: z.string().optional(),
     demo_url: z.string().optional(),
+    // Where the work actually lives. Supports Kaggle, Tableau Public, Colab,
+    // Hugging Face, etc. `github_url`/`demo_url` above still work and are
+    // merged in at render time (see src/lib/links.ts).
+    links: z.array(
+      z.object({
+        type: z.enum(['repo', 'notebook', 'dashboard', 'dataset', 'demo', 'article', 'other'])
+          .default('other'),
+        label: z.string().optional(),
+        url: z.string(),
+      })
+    ).default([]),
     data_sources: z.array(
       z.union([
         z.string(),
@@ -70,4 +81,43 @@ const contributors = defineCollection({
   }),
 });
 
-export const collections = { sports, projects, community, contributors };
+// Data-focused roles across sport. We store only the metadata plus a link out —
+// never the full job description (that's the employer's copyrighted text, and it
+// keeps this fast to maintain).
+const jobs = defineCollection({
+  loader: glob({ pattern: ['**/*.md', '!**/README.md'], base: './content/jobs' }),
+  schema: z.object({
+    title: z.string(),
+    company: z.string(),
+    url: z.string(),
+    location: z.string().default('Not specified'),
+    remote: z.boolean().default(false),
+    category: z.enum([
+      'Data Science',
+      'Data Engineering',
+      'Analytics',
+      'Research',
+      'Business Intelligence',
+      'Other',
+    ]).default('Other'),
+    org_type: z.enum([
+      'League',
+      'Team',
+      'Governing body',
+      'Sports tech',
+      'Media',
+      'Academic',
+      'Other',
+    ]).default('Other'),
+    employment_type: z.enum(['Full-time', 'Part-time', 'Contract', 'Internship'])
+      .default('Full-time'),
+    sport: z.string().optional(),
+    summary: z.string().optional(),
+    posted_date: z.coerce.date(),
+    // Required: a listing hides itself once this date passes, so the board
+    // can't fill up with dead links.
+    closes: z.coerce.date(),
+  }),
+});
+
+export const collections = { sports, projects, community, contributors, jobs };

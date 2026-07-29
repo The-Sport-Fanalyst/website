@@ -1,0 +1,168 @@
+---
+/**
+ * Announcement carousel.
+ *
+ * Source: the GitHub Discussions "Announcements" category (same place the slim
+ * header strip reads from), filtered to the ANNOUNCERS allowlist. The strip
+ * shows only the title; this shows title + text + image.
+ *
+ * Image: the first image in the discussion body. Drag a picture into the
+ * discussion post and it gets picked up automatically.
+ *
+ * Copy left, image right, prev/next through the 5 most recent. Renders nothing
+ * when there are no announcements.
+ */
+import { fetchAnnouncements } from '../lib/discussions';
+
+const items = await fetchAnnouncements(5);
+
+const fmt = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+
+{items.length > 0 && (
+  <section class="ann" aria-roledescription="carousel" aria-label="Announcements">
+    <div class="wrap ann__inner">
+      <header class="ann__head">
+        <h2>Announcements</h2>
+        {items.length > 1 && (
+          <div class="ann__nav">
+            <span class="ann__count" aria-live="polite">1 of {items.length}</span>
+            <button type="button" class="ann__btn" data-dir="-1" aria-label="Previous announcement" disabled>
+              &#8592;
+            </button>
+            <button type="button" class="ann__btn" data-dir="1" aria-label="Next announcement">
+              &#8594;
+            </button>
+          </div>
+        )}
+      </header>
+
+      <div class="ann__stage">
+        {items.map((item, i) => (
+          <article
+            class="ann__slide"
+            data-index={i}
+            hidden={i !== 0}
+            aria-roledescription="slide"
+            aria-label={`${i + 1} of ${items.length}`}
+          >
+            <div class="ann__copy">
+              <p class="ann__date">{fmt(item.createdAt)}</p>
+              <h3 class="ann__title">{item.title}</h3>
+              {item.summary && (
+                <p class="ann__summary">
+                  {item.summary}{item.summary.length >= 400 ? '…' : ''}
+                </p>
+              )}
+              <a href={item.url} class="btn" target="_blank" rel="noopener">
+                Read the announcement &#8594;
+              </a>
+            </div>
+
+            <div class="ann__media">
+              {item.image ? (
+                <img
+                  src={item.image}
+                  alt=""
+                  class="ann__img"
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                />
+              ) : (
+                <div class="ann__img ann__img--empty" aria-hidden="true"></div>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .ann { padding-block: clamp(2.4rem, 5vw, 4rem); }
+  .ann__head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; border-bottom: 2px solid var(--ink);
+    padding-bottom: .8rem; margin-bottom: 1.8rem;
+  }
+  .ann__head h2 { margin: 0; font-size: clamp(1.5rem, 3vw, 2rem); }
+
+  .ann__nav { display: flex; align-items: center; gap: .6rem; }
+  .ann__count {
+    font-family: var(--mono); font-size: .72rem; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--gray); white-space: nowrap;
+  }
+  .ann__btn {
+    width: 40px; height: 40px; border-radius: 99px; cursor: pointer;
+    border: 2px solid var(--ink); background: var(--surface); color: var(--ink);
+    font-size: 1rem; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background .12s ease, color .12s ease, transform .12s ease;
+  }
+  .ann__btn:hover:not(:disabled) { background: var(--accent-pink); color: #fff; transform: translateY(-2px); }
+  .ann__btn:disabled { opacity: .3; cursor: default; }
+
+  .ann__slide {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: clamp(1.5rem, 4vw, 3rem); align-items: center;
+  }
+  .ann__slide[hidden] { display: none; }
+
+  .ann__date {
+    font-family: var(--mono); font-size: .72rem; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--gray); margin: 0 0 .5rem;
+  }
+  .ann__title { font-size: clamp(1.4rem, 3vw, 2.1rem); margin: 0 0 .7rem; line-height: 1.1; }
+  .ann__summary { color: var(--ink-soft); margin: 0 0 1.4rem; max-width: 52ch; }
+
+  .ann__img {
+    width: 100%; height: auto; display: block;
+    border-radius: var(--radius);
+    aspect-ratio: 16 / 10; object-fit: cover;
+  }
+  .ann__img--empty { background: var(--paper-dim); }
+
+  @media (max-width: 900px) {
+    .ann__slide { grid-template-columns: 1fr; }
+    .ann__media { order: -1; }
+  }
+</style>
+
+<script>
+  document.querySelectorAll('.ann').forEach((root) => {
+    const slides = Array.from(root.querySelectorAll('.ann__slide'));
+    const count = root.querySelector('.ann__count');
+    const buttons = Array.from(root.querySelectorAll('.ann__btn'));
+    if (slides.length < 2) return;
+
+    let index = 0;
+
+    function show(next) {
+      index = Math.min(Math.max(next, 0), slides.length - 1);
+      slides.forEach((s, i) => {
+        if (i === index) s.removeAttribute('hidden');
+        else s.setAttribute('hidden', '');
+      });
+      if (count) count.textContent = `${index + 1} of ${slides.length}`;
+      buttons.forEach((b) => {
+        const dir = Number(b.getAttribute('data-dir'));
+        b.disabled = dir < 0 ? index === 0 : index === slides.length - 1;
+      });
+    }
+
+    buttons.forEach((b) => {
+      b.addEventListener('click', () => show(index + Number(b.getAttribute('data-dir'))));
+    });
+
+    // Left/right arrows when the carousel has focus.
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') show(index - 1);
+      if (e.key === 'ArrowRight') show(index + 1);
+    });
+
+    show(0);
+  });
+</script>

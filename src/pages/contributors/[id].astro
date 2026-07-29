@@ -42,7 +42,7 @@ const fmt = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', 
           <ProjectCard
             title={p.data.title} creator={p.data.creator} sport={p.data.sport}
             category={p.data.category} description={p.data.description} status={p.data.status}
-            github_url={p.data.github_url} demo_url={p.data.demo_url}
+            github_url={p.data.github_url} links={p.data.links} demo_url={p.data.demo_url}
             contributors={p.data.contributors} games={p.data.games}
             href={`/projects/${p.id}`}
           />

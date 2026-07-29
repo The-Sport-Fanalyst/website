@@ -13,10 +13,7 @@ const fmt = (iso: string) =>
   <a class="ann" href={a.url} target="_blank" rel="noopener">
     <span class="ann__tag">Announcement</span>
     <span class="ann__title">{a.title}</span>
-    {a.excerpt && <span class="ann__excerpt">— {a.excerpt}{a.excerpt.length >= 140 ? '…' : ''}</span>}
-    <span class="ann__meta">
-      {a.author && <>by {a.author} · </>}{fmt(a.createdAt)} ↗
-    </span>
+    <span class="ann__meta">↗</span>
   </a>
 )}
 

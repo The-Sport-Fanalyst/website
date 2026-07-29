@@ -27,4 +27,5 @@ export const CONTENT_PATHS = {
   data: 'projects', // data submissions are projects with category=Data
   research: 'projects', // research submissions are projects with category=Research
   app: 'projects', // app submissions are projects with category=Apps
+  job: 'jobs',
 } as const;

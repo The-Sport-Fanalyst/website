@@ -1,0 +1,256 @@
+---
+export const prerender = true;
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import HeadConfetti from '../components/HeadConfetti.astro';
+
+const all = await getCollection('jobs').catch(() => []);
+
+// Drop anything past its closing date — a jobs board full of dead links is
+// worse than a short one.
+const today = new Date();
+const open = all.filter((j) => j.data.closes >= today);
+
+const jobs = open.sort(
+  (a, b) => b.data.posted_date.valueOf() - a.data.posted_date.valueOf()
+);
+
+const uniq = (values: string[]) => Array.from(new Set(values)).sort();
+const categories = uniq(jobs.map((j) => j.data.category));
+const orgTypes = uniq(jobs.map((j) => j.data.org_type));
+const types = uniq(jobs.map((j) => j.data.employment_type));
+
+const daysAgo = (d: Date) =>
+  Math.max(0, Math.floor((today.valueOf() - d.valueOf()) / 86400000));
+
+const posted = (d: Date) => {
+  const n = daysAgo(d);
+  if (n === 0) return 'Today';
+  if (n === 1) return 'Yesterday';
+  if (n < 30) return `${n} days ago`;
+  const m = Math.floor(n / 30);
+  return m === 1 ? '1 month ago' : `${m} months ago`;
+};
+---
+<Base
+  title="Jobs — The Sport Fanalyst"
+  description="Data, analytics, and research roles across Olympic, Paralympic and emerging sport."
+>
+  <section class="head">
+    <HeadConfetti />
+    <div class="wrap">
+      <h1>Jobs</h1>
+      <p class="lead">
+        Data, analytics, and research roles across sport — collected in one place.
+        Every listing links straight to the original posting.
+      </p>
+      <p class="head__cta">
+        <a href="/jobs/submit" class="btn">Post a job →</a>
+      </p>
+    </div>
+  </section>
+
+  {jobs.length === 0 ? (
+    <section class="wrap section">
+      <div class="empty">
+        <h2>No open roles listed yet.</h2>
+        <p>
+          This board is just getting started. When roles are added they'll show up here,
+          searchable and filterable.
+        </p>
+        <a href="/jobs/submit" class="btn">Post the first job →</a>
+      </div>
+    </section>
+  ) : (
+    <section class="wrap section">
+      <div class="tools">
+        <label class="search">
+          <span class="sr-only">Search jobs</span>
+          <input
+            type="search"
+            id="job-search"
+            placeholder="Search title, company, or location…"
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="filters">
+          <div class="filter-group" data-group="category">
+            <button type="button" class="fchip is-on" data-filter="all">All roles</button>
+            {categories.map((c) => (
+              <button type="button" class="fchip" data-filter={c}>{c}</button>
+            ))}
+          </div>
+          <div class="filter-group" data-group="org">
+            <button type="button" class="fchip is-on" data-filter="all">All organizations</button>
+            {orgTypes.map((c) => (
+              <button type="button" class="fchip" data-filter={c}>{c}</button>
+            ))}
+          </div>
+          <div class="filter-group" data-group="type">
+            <button type="button" class="fchip is-on" data-filter="all">Any type</button>
+            {types.map((c) => (
+              <button type="button" class="fchip" data-filter={c}>{c}</button>
+            ))}
+            <button type="button" class="fchip" data-filter="remote" data-special="remote">Remote</button>
+          </div>
+        </div>
+
+        <p class="count" id="job-count" aria-live="polite">
+          {jobs.length} {jobs.length === 1 ? 'role' : 'roles'}
+        </p>
+      </div>
+
+      <ul class="jobs" id="job-list">
+        {jobs.map((j) => (
+          <li
+            class="job"
+            data-category={j.data.category}
+            data-org={j.data.org_type}
+            data-type={j.data.employment_type}
+            data-remote={String(j.data.remote)}
+            data-text={`${j.data.title} ${j.data.company} ${j.data.location} ${j.data.sport ?? ''}`.toLowerCase()}
+          >
+            <div class="job__main">
+              <h2 class="job__title">
+                <a href={j.data.url} target="_blank" rel="noopener">{j.data.title}</a>
+              </h2>
+              <p class="job__company">
+                {j.data.company}
+                <span class="job__dot">·</span>
+                {j.data.remote ? 'Remote' : j.data.location}
+                {j.data.sport && <><span class="job__dot">·</span>{j.data.sport}</>}
+              </p>
+              {j.data.summary && <p class="job__summary">{j.data.summary}</p>}
+              <div class="job__chips">
+                <span class="chip">{j.data.category}</span>
+                <span class="chip">{j.data.org_type}</span>
+                {j.data.employment_type !== 'Full-time' && (
+                  <span class="chip">{j.data.employment_type}</span>
+                )}
+                {j.data.remote && <span class="chip chip--models">Remote</span>}
+              </div>
+            </div>
+            <div class="job__side">
+              <span class="job__posted">{posted(j.data.posted_date)}</span>
+              <a href={j.data.url} class="btn btn--ghost" target="_blank" rel="noopener">View ↗</a>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <p class="none" id="job-none" hidden>No roles match those filters.</p>
+    </section>
+  )}
+</Base>
+
+<style>
+  .head h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); margin: 0 0 .8rem; }
+  .lead { max-width: 62ch; color: var(--ink-soft); margin: 0 0 .6rem; }
+  .head__cta { margin: 1.2rem 0 0; }
+  .lead a { color: var(--accent-pink); font-weight: 600; }
+
+  .empty { border: 1px dashed var(--line); border-left: var(--rail) solid var(--accent-lime); padding: 2rem; max-width: 60ch; }
+  .empty h2 { margin: 0 0 .6rem; font-size: 1.5rem; }
+  .empty p { color: var(--ink-soft); }
+
+  .tools { margin-bottom: 2rem; }
+  .search input {
+    width: 100%; max-width: 460px;
+    font-family: var(--sans); font-size: 1rem;
+    padding: .7rem .9rem;
+    border: 2px solid var(--ink); border-radius: 99px;
+    background: var(--surface); color: var(--ink);
+  }
+  .search input:focus { outline: 3px solid var(--accent-pink); outline-offset: 2px; }
+
+  .filters { display: flex; flex-direction: column; gap: .6rem; margin-top: 1.2rem; }
+  .filter-group { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .fchip {
+    font-family: var(--mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .05em;
+    padding: .35rem .8rem; border-radius: 99px; cursor: pointer;
+    border: 1.5px solid var(--line); background: var(--surface); color: var(--gray);
+  }
+  .fchip:hover { border-color: var(--ink); color: var(--ink); }
+  .fchip.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  .count { font-family: var(--mono); font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--gray); margin: 1.2rem 0 0; }
+
+  .jobs { list-style: none; padding: 0; margin: 0; border-top: 2px solid var(--ink); }
+  .job {
+    display: grid; grid-template-columns: 1fr auto; gap: 1.2rem;
+    padding: 1.4rem 0; border-bottom: 1px solid var(--line); align-items: start;
+  }
+  .job[hidden] { display: none; }
+  .job__title { font-size: 1.2rem; margin: 0 0 .3rem; }
+  .job__title a { text-decoration: none; }
+  .job__title a:hover { color: var(--accent-pink); }
+  .job__company { margin: 0 0 .5rem; color: var(--ink-soft); font-size: .95rem; }
+  .job__dot { color: var(--gray-soft); margin: 0 .45rem; }
+  .job__summary { margin: 0 0 .7rem; color: var(--gray); font-size: .9rem; max-width: 70ch; }
+  .job__chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .job__side { display: flex; flex-direction: column; align-items: flex-end; gap: .6rem; white-space: nowrap; }
+  .job__posted { font-family: var(--mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--gray); }
+
+  .none { padding: 2rem 0; color: var(--gray); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  @media (max-width: 640px) {
+    .job { grid-template-columns: 1fr; }
+    .job__side { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; }
+  }
+</style>
+
+<script>
+  const list = document.getElementById('job-list');
+  if (list) {
+    const rows = Array.from(list.querySelectorAll('.job'));
+    const search = document.getElementById('job-search');
+    const count = document.getElementById('job-count');
+    const none = document.getElementById('job-none');
+    const active = { category: 'all', org: 'all', type: 'all', remote: false };
+
+    function apply() {
+      const q = (search?.value || '').trim().toLowerCase();
+      let shown = 0;
+
+      rows.forEach((row) => {
+        const matchText = !q || (row.dataset.text || '').includes(q);
+        const matchCat = active.category === 'all' || row.dataset.category === active.category;
+        const matchOrg = active.org === 'all' || row.dataset.org === active.org;
+        const matchType = active.type === 'all' || row.dataset.type === active.type;
+        const matchRemote = !active.remote || row.dataset.remote === 'true';
+        const ok = matchText && matchCat && matchOrg && matchType && matchRemote;
+        row.hidden = !ok;
+        if (ok) shown++;
+      });
+
+      if (count) count.textContent = `${shown} ${shown === 1 ? 'role' : 'roles'}`;
+      if (none) none.hidden = shown !== 0;
+    }
+
+    document.querySelectorAll('.filter-group').forEach((group) => {
+      const key = group.getAttribute('data-group');
+      group.addEventListener('click', (e) => {
+        const btn = e.target.closest('.fchip');
+        if (!btn) return;
+
+        // "Remote" is a toggle that sits alongside the type filters.
+        if (btn.dataset.special === 'remote') {
+          active.remote = !active.remote;
+          btn.classList.toggle('is-on', active.remote);
+          apply();
+          return;
+        }
+
+        group.querySelectorAll('.fchip:not([data-special])').forEach((b) => b.classList.remove('is-on'));
+        btn.classList.add('is-on');
+        active[key] = btn.dataset.filter;
+        apply();
+      });
+    });
+
+    search?.addEventListener('input', apply);
+    apply();
+  }
+</script>

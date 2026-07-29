@@ -3,6 +3,7 @@ export const prerender = true;
 import { getCollection, render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import { newDiscussionUrl } from '../../lib/discussions';
+import { resolveLinks, findTableau } from '../../lib/links';
 
 export async function getStaticPaths() {
   const projects = await getCollection('projects');
@@ -12,6 +13,10 @@ export async function getStaticPaths() {
 const { project } = Astro.props;
 const d = project.data;
 const { Content } = await render(project);
+
+const links = resolveLinks(d);
+const tableau = findTableau(links);
+const repoLink = links.find((l) => l.platform === 'GitHub');
 
 const contributors = await getCollection('contributors');
 const team = [d.creator, ...d.contributors];
@@ -34,8 +39,11 @@ const fmt = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', 
         <h1>{d.title}</h1>
         <p class="phead__desc">{d.description}</p>
         <div class="phead__cta">
-          {d.github_url && <a href={d.github_url} class="btn">View repository ↗</a>}
-          {d.demo_url && <a href={d.demo_url} class="btn btn--ghost">Open demo ↗</a>}
+          {links.map((l) => (
+            <a href={l.url} target="_blank" rel="noopener" class={l.primary ? 'btn' : 'btn btn--ghost'}>
+              {l.text} ↗
+            </a>
+          ))}
         </div>
       </div>
     </header>
@@ -44,18 +52,36 @@ const fmt = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', 
       <div class="pbody__main prose">
         <Content />
 
-        <div class="repo">
-          <h2>On GitHub</h2>
-          <p>This project lives in the open. Everything below is part of the repository — the source of truth.</p>
-          <ul class="repo__list">
-            <li><span>README</span> Overview, setup, and how to run it</li>
-            <li><span>Documentation</span> Methodology and data dictionary</li>
-            <li><span>Issues</span> Open tasks and good-first-issues</li>
-            <li><span>Pull requests</span> How changes get reviewed and merged</li>
-            <li><span>Contributors</span> Everyone who shaped the work</li>
-          </ul>
-          {d.github_url && <a href={d.github_url} class="btn btn--ghost">Open on GitHub ↗</a>}
-        </div>
+        {tableau && (
+          <div class="viz">
+            <h2>Dashboard</h2>
+            <div class="viz__frame" data-embed={tableau.embed}>
+              <button type="button" class="viz__load">
+                <span class="viz__play" aria-hidden="true">▶</span>
+                <span>Load the interactive dashboard</span>
+                <small>Loads from Tableau Public</small>
+              </button>
+            </div>
+            <a href={tableau.view} target="_blank" rel="noopener" class="btn btn--ghost">
+              View on Tableau Public ↗
+            </a>
+          </div>
+        )}
+
+        {repoLink && (
+          <div class="repo">
+            <h2>On GitHub</h2>
+            <p>This project lives in the open. Everything below is part of the repository — the source of truth.</p>
+            <ul class="repo__list">
+              <li><span>README</span> Overview, setup, and how to run it</li>
+              <li><span>Documentation</span> Methodology and data dictionary</li>
+              <li><span>Issues</span> Open tasks and good-first-issues</li>
+              <li><span>Pull requests</span> How changes get reviewed and merged</li>
+              <li><span>Contributors</span> Everyone who shaped the work</li>
+            </ul>
+            <a href={repoLink.url} target="_blank" rel="noopener" class="btn btn--ghost">Open on GitHub ↗</a>
+          </div>
+        )}
       </div>
 
       <aside class="pbody__side">
@@ -113,7 +139,7 @@ const fmt = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', 
             href={newDiscussionUrl({
               type: 'Open Project',
               title: `Collaborators wanted: ${d.title}`,
-              body: `**Project:** ${d.title}\n**Sport:** ${d.sport}\n**Category:** ${d.category}\n\n${d.description}\n\n${d.github_url ? `Repo: ${d.github_url}\n\n` : ''}I'm looking for collaborators — reply here if you'd like to help.`,
+              body: `**Project:** ${d.title}\n**Sport:** ${d.sport}\n**Category:** ${d.category}\n\n${d.description}\n\n${links.length > 0 ? `Link: ${links[0].url}\n\n` : ''}I'm looking for collaborators — reply here if you'd like to help.`,
             })}
             class="join-call"
           >
@@ -168,3 +194,59 @@ const fmt = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', 
   .join-call span { font-size: .88rem; }
   .join-call:hover { box-shadow: inset 0 0 0 2px var(--ink); }
 </style>
+
+<style>
+  /* Tableau (and future) embeds: click-to-load so we don't pull a heavy
+     third-party viz on every page view. */
+  .viz { margin: 2.4rem 0 3rem; }
+  .viz h2 { margin-bottom: .8rem; }
+  .viz__frame {
+    position: relative;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+    aspect-ratio: 16 / 10;
+    margin-bottom: 1rem;
+  }
+  .viz__frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .viz__load {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .5rem; cursor: pointer;
+    background: var(--bg); border: 0;
+    font-family: var(--sans); font-weight: 600; font-size: 1rem; color: var(--ink);
+  }
+  .viz__load:hover { background: var(--paper-dim); }
+  .viz__load small { font-family: var(--mono); font-weight: 400; font-size: .72rem; color: var(--gray); }
+  .viz__play {
+    display: flex; align-items: center; justify-content: center;
+    width: 54px; height: 54px; border-radius: 99px;
+    background: var(--accent-pink); color: #fff; font-size: 1.1rem;
+    margin-bottom: .3rem;
+  }
+</style>
+
+<script>
+  // Swap the placeholder for the real iframe only when asked.
+  document.querySelectorAll('.viz__frame').forEach((frame) => {
+    const btn = frame.querySelector('.viz__load');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const src = frame.getAttribute('data-embed');
+      if (!src) return;
+      const iframe = document.createElement('iframe');
+      iframe.src = src;
+      iframe.loading = 'lazy';
+      iframe.setAttribute('title', 'Interactive dashboard');
+      iframe.setAttribute('allowfullscreen', '');
+      // Sandbox the third-party frame: allow it to run and navigate itself,
+      // but not to grab our page or auto-navigate the top window.
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms');
+      iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+      frame.innerHTML = '';
+      frame.appendChild(iframe);
+    });
+  });
+</script>

@@ -1,4 +1,6 @@
 ---
+import { resolveLinks, type ProjectLink } from '../lib/links';
+
 interface Props {
   title: string;
   creator: string;
@@ -8,14 +10,18 @@ interface Props {
   status: string;
   github_url?: string;
   demo_url?: string;
+  links?: ProjectLink[];
   contributors?: string[];
   games?: string[];
   href: string;
 }
 const {
   title, creator, sport, category, description, status,
-  github_url, demo_url, contributors = [], games = [], href,
+  github_url, demo_url, links = [], contributors = [], games = [], href,
 } = Astro.props;
+
+// Show at most two short, platform-aware links (e.g. "kaggle", "tableau").
+const resolved = resolveLinks({ links, github_url, demo_url }).slice(0, 2);
 
 const catClass = `chip chip--${category.toLowerCase()}`;
 ---
@@ -37,8 +43,11 @@ const catClass = `chip chip--${category.toLowerCase()}`;
   <div class="card__foot">
     <span class="card__by">by <b>{creator}</b>{contributors.length > 0 && ` +${contributors.length}`}</span>
     <span class="card__links">
-      {github_url && <a href={github_url} aria-label="GitHub repository">code</a>}
-      {demo_url && <a href={demo_url} aria-label="Live demo">demo</a>}
+      {resolved.map((l) => (
+        <a href={l.url} target="_blank" rel="noopener" aria-label={l.text}>
+          {l.platform === 'Link' ? l.type : l.platform.toLowerCase()}
+        </a>
+      ))}
     </span>
   </div>
 </article>
